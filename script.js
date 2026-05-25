@@ -115,6 +115,26 @@ function getVernierReadings(angleDeg) {
   return { msr: msr.toFixed(2), vsr: (vsr * 60).toFixed(1), total: total.toFixed(2) };
 }
 
+// ===== HELPERS =====
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+function getCanvasHeight(desktopH, mobileH, smallH) {
+  if (window.innerWidth <= 400) return smallH || mobileH;
+  if (window.innerWidth <= 768) return mobileH;
+  return desktopH;
+}
+
+// Debounce utility
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
 // ===== NAVIGATION =====
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
@@ -122,11 +142,19 @@ document.addEventListener('DOMContentLoaded', () => {
   initDiagramCanvas();
   initSimulationCanvas();
   initSpectrometerCanvas();
+  initTouchControls();
   setupTableListeners();
-  window.addEventListener('resize', () => {
+
+  const handleResize = debounce(() => {
     initDiagramCanvas();
+    resizeSimCanvas();
     drawSimulation();
     drawSpectrometer();
+  }, 200);
+
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(handleResize, 300);
   });
 });
 
@@ -141,14 +169,33 @@ function initNavigation() {
     updateActiveNav();
   });
 
-  // Mobile menu
-  toggle.addEventListener('click', () => {
-    links.classList.toggle('open');
+  // Mobile menu toggle with animation
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = links.classList.toggle('open');
+    toggle.classList.toggle('active', isOpen);
+    // Prevent body scroll when menu is open
+    document.body.style.overflow = isOpen ? 'hidden' : '';
   });
 
   // Close mobile on link click
   links.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => links.classList.remove('open'));
+    a.addEventListener('click', () => {
+      links.classList.remove('open');
+      toggle.classList.remove('active');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // Close menu when tapping outside
+  document.addEventListener('click', (e) => {
+    if (links.classList.contains('open') &&
+        !links.contains(e.target) &&
+        !toggle.contains(e.target)) {
+      links.classList.remove('open');
+      toggle.classList.remove('active');
+      document.body.style.overflow = '';
+    }
   });
 }
 
@@ -249,14 +296,14 @@ function initDiagramCanvas() {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  const H = getCanvasHeight(350, 250, 200);
 
   canvas.width = rect.width * dpr;
-  canvas.height = 350 * dpr;
-  canvas.style.height = '350px';
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
 
   const W = rect.width;
-  const H = 350;
 
   ctx.clearRect(0, 0, W, H);
 
@@ -437,15 +484,17 @@ function initSimulationCanvas() {
 function resizeSimCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = simCanvas.getBoundingClientRect();
+  const h = getCanvasHeight(500, 300, 250);
   simCanvas.width = rect.width * dpr;
-  simCanvas.height = 500 * dpr;
+  simCanvas.height = h * dpr;
+  simCanvas.style.height = h + 'px';
   simCtx.scale(dpr, dpr);
 }
 
 function drawSimulation() {
   if (!simCtx) return;
   const W = simCanvas.getBoundingClientRect().width;
-  const H = 500;
+  const H = getCanvasHeight(500, 300, 250);
   const ctx = simCtx;
   const dpr = window.devicePixelRatio || 1;
 
@@ -750,13 +799,14 @@ function drawSpectrometer() {
   const canvas = specCanvas;
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  const H = getCanvasHeight(400, 300, 260);
   canvas.width = rect.width * dpr;
-  canvas.height = 400 * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
   const ctx = specCtx;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const W = rect.width;
-  const H = 400;
 
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#020208';
@@ -1319,3 +1369,83 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
+
+// ===== TOUCH CONTROLS FOR MOBILE =====
+function initTouchControls() {
+  const simCanvasEl = document.getElementById('simCanvas');
+  if (!simCanvasEl) return;
+
+  let isDragging = false;
+
+  function getAngleFromTouch(e) {
+    const rect = simCanvasEl.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    const W = rect.width;
+    const H = rect.height;
+    const gratingX = W * 0.5;
+    const centerY = H / 2;
+
+    // Calculate angle from grating center to touch point
+    const dx = gratingX - x;
+    const dy = centerY - y;
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+    // Clamp to -60..60
+    angle = Math.max(-60, Math.min(60, angle));
+    return angle;
+  }
+
+  // Touch start
+  simCanvasEl.addEventListener('touchstart', (e) => {
+    if (!state.laserOn || !state.gratingPlaced) return;
+    isDragging = true;
+    const angle = getAngleFromTouch(e);
+    document.getElementById('detectorSlider').value = angle;
+    moveDetector(angle);
+    e.preventDefault();
+  }, { passive: false });
+
+  // Touch move
+  simCanvasEl.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const angle = getAngleFromTouch(e);
+    document.getElementById('detectorSlider').value = angle;
+    moveDetector(angle);
+    e.preventDefault();
+  }, { passive: false });
+
+  // Touch end
+  simCanvasEl.addEventListener('touchend', () => {
+    isDragging = false;
+  });
+
+  simCanvasEl.addEventListener('touchcancel', () => {
+    isDragging = false;
+  });
+
+  // Mouse drag support (also useful for desktop)
+  simCanvasEl.addEventListener('mousedown', (e) => {
+    if (!state.laserOn || !state.gratingPlaced) return;
+    isDragging = true;
+    const angle = getAngleFromTouch(e);
+    document.getElementById('detectorSlider').value = angle;
+    moveDetector(angle);
+  });
+
+  simCanvasEl.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const angle = getAngleFromTouch(e);
+    document.getElementById('detectorSlider').value = angle;
+    moveDetector(angle);
+  });
+
+  simCanvasEl.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  simCanvasEl.addEventListener('mouseleave', () => {
+    isDragging = false;
+  });
+}

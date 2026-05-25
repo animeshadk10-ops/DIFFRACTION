@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="description" content="Virtual Lab: Determine the wavelength of laser light by diffraction method using a plane transmission grating and spectrometer. Interactive simulation with data tables and calculations.">
   <title>Laser Diffraction Virtual Lab — Wavelength Determination</title>
   <link rel="stylesheet" href="style.css">
@@ -309,7 +309,7 @@
           <!-- Info Box -->
           <div class="info-box">
             <span class="info-icon">ℹ️</span>
-            <span>Turn on the laser, place the grating, and move the detector arm to measure diffraction angles. Click "Record Reading" to save data to the observation table.</span>
+            <span>Turn on the laser, place the grating, and move the detector arm to measure diffraction angles. Click "Record Reading" to save data to the observation table. <strong>On mobile:</strong> drag your finger on the simulation canvas to move the detector, or use the slider and quick-jump buttons below.</span>
           </div>
 
           <!-- Main Simulation Canvas -->
@@ -560,7 +560,7 @@
           </table>
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 40px;">
+        <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap;">
           <button class="btn btn-secondary btn-sm" onclick="autoFillTable1()">
             🤖 Auto-Fill from Simulation
           </button>
@@ -616,7 +616,7 @@
           </table>
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: center;">
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
           <button class="btn btn-primary btn-sm" onclick="calculateWavelength()">
             🧮 Calculate Wavelength
           </button>

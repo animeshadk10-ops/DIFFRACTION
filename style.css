@@ -255,11 +255,13 @@ body {
 .mobile-toggle {
   display: none;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
-  padding: 8px;
+  padding: 10px;
   background: none;
   border: none;
+  z-index: 1001;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-toggle span {
@@ -268,6 +270,22 @@ body {
   background: var(--text-primary);
   border-radius: 2px;
   transition: var(--transition-normal);
+  transform-origin: center;
+}
+
+/* Hamburger → X animation */
+.mobile-toggle.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.mobile-toggle.active span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.mobile-toggle.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
 }
 
 /* ===== Hero Section ===== */
@@ -1632,7 +1650,9 @@ input[type="range"]::-moz-range-thumb {
   flex-shrink: 0;
 }
 
-/* ===== Responsive ===== */
+/* ============================================================
+   RESPONSIVE — TABLET (max-width: 1024px)
+   ============================================================ */
 @media (max-width: 1024px) {
   .theory-grid {
     grid-template-columns: 1fr;
@@ -1641,75 +1661,733 @@ input[type="range"]::-moz-range-thumb {
   .spectrometer-wrapper {
     grid-template-columns: 1fr;
   }
+
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .apparatus-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
+/* ============================================================
+   RESPONSIVE — MOBILE (max-width: 768px)
+   ============================================================ */
 @media (max-width: 768px) {
+
+  /* — Base Tweaks — */
+  html {
+    font-size: 15px;
+  }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .section-header {
+    margin-bottom: 36px;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .container {
+    padding: 0 16px;
+  }
+
+  /* — Navigation — */
+  .navbar-inner {
+    height: 60px;
+  }
+
+  .brand-name {
+    font-size: 14px;
+    letter-spacing: 1.5px;
+  }
+
+  .brand-sub {
+    font-size: 9px;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 17px;
+    border-radius: 10px;
+  }
+
   .nav-links {
     display: none;
-    position: absolute;
-    top: 72px;
+    position: fixed;
+    top: 60px;
     left: 0;
     right: 0;
+    bottom: 0;
     flex-direction: column;
     background: rgba(5, 5, 16, 0.98);
-    backdrop-filter: blur(20px);
-    padding: 16px;
-    gap: 4px;
-    border-bottom: 1px solid var(--border-color);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding: 20px 16px;
+    gap: 6px;
+    border-top: 1px solid var(--border-color);
     animation: slideDown 0.3s ease;
+    z-index: 999;
+    overflow-y: auto;
   }
 
   .nav-links.open {
     display: flex;
   }
 
+  .nav-links a {
+    font-size: 15px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    text-align: left;
+  }
+
+  .nav-links a.active {
+    background: rgba(255, 23, 68, 0.1);
+  }
+
   .mobile-toggle {
     display: flex;
   }
 
-  .hero-stats {
-    gap: 24px;
-    flex-wrap: wrap;
+  /* — Hero — */
+  .hero {
+    min-height: 85vh;
+    padding-top: 60px;
+  }
+
+  .hero-content {
+    padding: 24px 8px;
   }
 
   .hero h1 {
-    font-size: 1.8rem;
+    font-size: 1.7rem;
+    line-height: 1.2;
   }
 
-  .tabs-nav {
-    justify-content: flex-start;
+  .hero-badge {
+    font-size: 10px;
+    padding: 6px 14px;
+    margin-bottom: 24px;
+    letter-spacing: 1.5px;
   }
 
-  .variable-list {
-    grid-template-columns: 1fr;
-  }
-
-  .sim-controls {
-    flex-direction: column;
-  }
-
-  .detector-controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .card {
-    padding: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 0 16px;
+  .hero-description {
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+    line-height: 1.7;
   }
 
   .hero-actions {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .hero-actions .btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .hero-stats {
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 40px;
+  }
+
+  .hero-stat .value {
+    font-size: 1.4rem;
+  }
+
+  .hero-stat .label {
+    font-size: 10px;
+  }
+
+  /* — Buttons — */
+  .btn {
+    padding: 12px 24px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .btn-sm {
+    padding: 10px 18px;
+    font-size: 12px;
+  }
+
+  /* — Cards — */
+  .card {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  /* — Theory — */
+  .theory-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .formula-box {
+    padding: 20px 16px;
+  }
+
+  .formula-box .formula {
+    font-size: 1.3rem;
+  }
+
+  .variable-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .variable-item {
+    padding: 10px 14px;
+  }
+
+  /* — Apparatus — */
+  .apparatus-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .apparatus-item {
+    padding: 14px;
+  }
+
+  .apparatus-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  /* — Procedure — */
+  .procedure-step {
+    gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .step-number {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .step-text {
+    font-size: 13px;
+    padding-top: 4px;
+  }
+
+  /* — Simulation — */
+  #simCanvas {
+    height: 300px;
+    touch-action: none;
+  }
+
+  .sim-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sim-control-group {
+    min-width: unset;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .sim-control-group h4 {
+    font-size: 11px;
+    margin-bottom: 14px;
+  }
+
+  /* Larger touch target for slider */
+  input[type="range"] {
+    height: 8px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  .order-buttons {
+    gap: 6px;
+  }
+
+  .order-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+    min-width: 42px;
+    text-align: center;
+  }
+
+  .control-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .control-value {
+    text-align: left;
+  }
+
+  /* — Spectrometer — */
+  .spectrometer-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .spectrometer-visual {
+    min-height: 300px;
+  }
+
+  #spectrometerCanvas {
+    height: 300px;
+  }
+
+  .vernier-panel {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .vernier-reading {
+    padding: 12px;
+  }
+
+  .vernier-reading .reading-value {
+    font-size: 1.4rem;
+  }
+
+  .vernier-reading .reading-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* — Measurement Panel — */
+  .measurement-panel {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .measurement-item {
+    padding: 14px 10px;
+  }
+
+  .measurement-item .m-value {
+    font-size: 1.2rem;
+  }
+
+  .measurement-item .m-label {
+    font-size: 9px;
+  }
+
+  /* — Observation Tables — */
+  .table-container {
+    border-radius: 10px;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-title {
+    font-size: 12px;
+    padding: 14px 16px;
+  }
+
+  .data-table {
+    font-size: 11px;
+    min-width: 800px; /* Force horizontal scroll */
+  }
+
+  .data-table th {
+    padding: 10px 8px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+
+  .data-table td {
+    padding: 8px 6px;
+  }
+
+  .data-table input {
+    width: 60px;
+    padding: 6px 4px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+
+  /* Scroll hint for tables */
+  .table-container::after {
+    content: '← swipe to scroll →';
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 8px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    letter-spacing: 1px;
+  }
+
+  .obs-params {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .obs-param {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .obs-param label {
+    font-size: 12px;
+  }
+
+  .obs-param input {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+  }
+
+  /* — Results — */
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .result-card {
+    padding: 18px 12px;
+  }
+
+  .result-card .result-value {
+    font-size: 1.5rem;
+  }
+
+  .result-card .result-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+  }
+
+  .result-card .result-unit {
+    font-size: 12px;
+  }
+
+  /* — Error Analysis — */
+  .error-analysis {
+    padding: 18px;
+  }
+
+  .error-analysis h3 {
+    font-size: 12px;
+  }
+
+  .error-formula {
+    font-size: 13px;
+    padding: 12px 10px;
+    overflow-x: auto;
+  }
+
+  /* — Quiz — */
+  .quiz-item {
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .quiz-question {
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .quiz-number {
+    font-size: 12px;
+    min-width: 28px;
+  }
+
+  .quiz-options {
+    padding-left: 0;
+    gap: 8px;
+  }
+
+  .quiz-option {
+    padding: 12px 14px;
+    font-size: 13px;
+    gap: 10px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .quiz-radio {
+    width: 22px;
+    height: 22px;
+  }
+
+  .quiz-feedback {
+    font-size: 12px;
+    padding: 10px 12px;
+    line-height: 1.6;
+  }
+
+  .quiz-score .score-value {
+    font-size: 2.2rem;
+  }
+
+  .quiz-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quiz-actions .btn {
+    justify-content: center;
+  }
+
+  /* — Diagram — */
+  .diagram-wrapper {
+    padding: 10px;
+  }
+
+  #diagramCanvas {
+    height: 250px;
+  }
+
+  /* — Info Box — */
+  .info-box {
+    font-size: 12px;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  /* — Toast — */
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    font-size: 13px;
+    padding: 14px 18px;
+  }
+
+  /* — Print Button — */
+  .print-btn {
+    bottom: 16px;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  /* — Footer — */
+  .footer {
+    padding: 28px 0;
+  }
+
+  .footer-text {
+    font-size: 11px;
+  }
+
+  /* — Status indicators — */
+  .status-indicator {
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — SMALL MOBILE (max-width: 400px)
+   ============================================================ */
+@media (max-width: 400px) {
+  .container {
+    padding: 0 12px;
+  }
+
+  .hero h1 {
+    font-size: 1.4rem;
+  }
+
+  .hero-description {
+    font-size: 0.85rem;
   }
 
   .section {
-    padding: 48px 0;
+    padding: 36px 0;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+  }
+
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .formula-box .formula {
+    font-size: 1.1rem;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .measurement-panel {
+    grid-template-columns: 1fr;
+  }
+
+  #simCanvas {
+    height: 250px;
+  }
+
+  .spectrometer-visual {
+    min-height: 260px;
+  }
+
+  #spectrometerCanvas {
+    height: 260px;
+  }
+
+  #diagramCanvas {
+    height: 200px;
+  }
+
+  .order-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-width: 36px;
+  }
+
+  .theory-text h3 {
+    font-size: 1rem;
+  }
+
+  .apparatus-item {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .apparatus-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .procedure-step {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+/* ============================================================
+   TOUCH / HOVER UTILITIES
+   ============================================================ */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects that don't make sense on touch */
+  .apparatus-item:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .card:hover {
+    border-color: var(--border-color);
+    background: var(--bg-card);
+  }
+
+  .procedure-step:hover {
+    border-color: var(--border-color);
+    background: var(--bg-card);
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: none;
+  }
+
+  /* Active states instead of hover for touch */
+  .btn-primary:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.97);
+    background: var(--bg-glass-hover);
+  }
+
+  .quiz-option:active {
+    transform: scale(0.98);
+  }
+
+  .order-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 23, 68, 0.2);
+  }
+
+  .nav-links a:active {
+    background: rgba(255, 23, 68, 0.1);
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero {
+    min-height: auto;
+    padding: 80px 0 40px;
+  }
+
+  .hero-stats {
+    display: none;
+  }
+
+  #simCanvas {
+    height: 280px;
+  }
+
+  #spectrometerCanvas {
+    height: 280px;
+  }
+}
+
+/* ============================================================
+   SAFE AREA (Notched phones)
+   ============================================================ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .navbar {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .toast {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .print-btn {
+    bottom: calc(16px + env(safe-area-inset-bottom));
   }
 }
 
