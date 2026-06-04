@@ -383,30 +383,40 @@
             </div>
           </div>
 
-          <!-- Vernier Scale Readings -->
+          <!-- Spectrometer & Vernier Scale -->
           <div class="spectrometer-wrapper">
             <div class="spectrometer-visual">
               <canvas id="spectrometerCanvas"></canvas>
             </div>
             <div class="vernier-panel">
-              <h4>📏 Vernier Scale Readings</h4>
+              <h4>📏 Scale Readings</h4>
+              <div class="vernier-info-bar">
+                <span class="vi-label">Least Count (LC)</span>
+                <span class="vi-value">1/180° = 0.0056°</span>
+              </div>
+              <div class="vernier-info-bar">
+                <span class="vi-label">Grating Pitch (d)</span>
+                <span class="vi-value" id="vernierDValue">2.000 × 10⁻⁴ cm</span>
+              </div>
+              <div class="vernier-divider">Vernier I</div>
               <div class="vernier-reading">
-                <div class="reading-label">Vernier I — Main Scale Reading (M.S.R)</div>
+                <div class="reading-label">M.S.R (Main Scale Reading)</div>
                 <div class="reading-value" id="msr1">0.00<span class="reading-unit">°</span></div>
               </div>
               <div class="vernier-reading">
-                <div class="reading-label">Vernier I — Vernier Scale Reading (V.S.R)</div>
-                <div class="reading-value" id="vsr1">0.0<span class="reading-unit">'</span></div>
+                <div class="reading-label">V.S.D (Vernier Scale Division)</div>
+                <div class="reading-value" id="vsr1">0<span class="reading-unit"> div</span></div>
               </div>
+              <div class="vernier-reading highlight-reading">
+                <div class="reading-label">Total θ₁ = MSR + VSD × LC</div>
+                <div class="reading-value" id="total1">0.0000<span class="reading-unit">°</span></div>
+              </div>
+              <div class="vernier-divider v2">Vernier II (= V₁ + 180°)</div>
               <div class="vernier-reading">
-                <div class="reading-label">Vernier I — Total (θ₁)</div>
-                <div class="reading-value" id="total1">0.00<span class="reading-unit">°</span></div>
+                <div class="reading-label">Total θ₂</div>
+                <div class="reading-value" id="total2">180.0000<span class="reading-unit">°</span></div>
               </div>
-              <div class="vernier-reading">
-                <div class="reading-label">Vernier II — Total (θ₂)</div>
-                <div class="reading-value" id="total2">0.00<span class="reading-unit">°</span></div>
-              </div>
-              <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="recordReading()">
+              <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 8px;" onclick="recordReading()">
                 📝 Record Reading
               </button>
             </div>
