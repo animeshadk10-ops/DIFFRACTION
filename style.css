@@ -286,7 +286,6 @@ body {
 .mobile-toggle.active span:nth-child(3) {
   transform: translateY(-8px) rotate(-45deg);
 }
-}
 
 /* ===== Hero Section ===== */
 .hero {
