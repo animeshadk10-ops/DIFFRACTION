@@ -1,4 +1,4 @@
-// ===== LASER DIFFRACTION VIRTUAL LAB — MAIN SCRIPT =====
+﻿// ===== LASER DIFFRACTION VIRTUAL LAB ΓÇö MAIN SCRIPT =====
 
 // Polyfill for CanvasRenderingContext2D.roundRect
 if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -24,7 +24,7 @@ const state = {
   linesPerCm: 5000,
   actualWavelength: 650, // nm
   detectorAngle: 0,
-  vernierConstant: 1/180, // LC = 1/180 degree
+  vernierConstant: 1/60, // 1 minute = 1/60 degree
   recordedReadings: {},
   // Computed
   get pitch() { return 1 / this.linesPerCm; }, // cm
@@ -47,7 +47,7 @@ const quizExplanations = {
   q7: "White light contains all wavelengths, so each order produces a spectrum (rainbow) because different wavelengths diffract at different angles.",
   q8: "In stimulated emission, an incident photon triggers an excited atom to emit an identical photon (same phase, frequency, direction). Spontaneous emission is random.",
   q9: "The eye's lens focuses the coherent, collimated laser beam onto an extremely small spot on the retina, causing concentrated thermal damage.",
-  q10: "Wider slits produce narrower diffraction patterns because the angular spread is inversely proportional to slit width (θ ∝ λ/a)."
+  q10: "Wider slits produce narrower diffraction patterns because the angular spread is inversely proportional to slit width (╬╕ Γê¥ ╬╗/a)."
 };
 
 const quizSelected = {};
@@ -107,36 +107,12 @@ function addNoise(value, magnitude = 0.02) {
 
 // ===== VERNIER SCALE READINGS =====
 function getVernierReadings(angleDeg) {
-  // LC = 1/180 degree, MSR divisions = 0.5 degree
-  // Vernier has 90 divisions (0.5 / (1/180) = 90)
-  const LC = state.vernierConstant; // 1/180 degree
-  let noisy = addNoise(angleDeg, 0.02);
-  noisy = (noisy % 360 + 360) % 360; // normalize to 0-360
-  
-  // Vernier I
-  const msr1 = Math.floor(noisy * 2) / 2; // nearest lower 0.5° division
-  const remainder1 = noisy - msr1;
-  const vsd1 = Math.round(remainder1 / LC); // which vernier division coincides
-  const total1 = msr1 + vsd1 * LC;
-  
-  // Vernier II = Vernier I + 180° (diametrically opposite)
-  const noisy2 = total1 + 180;
-  const msr2 = Math.floor(noisy2 * 2) / 2;
-  const remainder2 = noisy2 - msr2;
-  const vsd2 = Math.round(remainder2 / LC);
-  const total2 = msr2 + vsd2 * LC;
-  
-  return {
-    msr1: msr1.toFixed(2),
-    vsd1: vsd1, // vernier scale division number (0-89)
-    vsr1: (vsd1 * LC).toFixed(4), // VSR in degrees
-    total1: total1.toFixed(4),
-    msr2: msr2.toFixed(2),
-    vsd2: vsd2,
-    vsr2: (vsd2 * LC).toFixed(4),
-    total2: total2.toFixed(4),
-    angleDeg: noisy
-  };
+  // Add small realistic noise
+  const noisy = addNoise(Math.abs(angleDeg), 0.03);
+  const msr = Math.floor(noisy * 2) / 2; // 0.5 degree resolution
+  const vsr = (noisy - msr);
+  const total = msr + vsr;
+  return { msr: msr.toFixed(2), vsr: (vsr * 60).toFixed(1), total: total.toFixed(2) };
 }
 
 // ===== HELPERS =====
@@ -460,12 +436,11 @@ function initDiagramCanvas() {
     ctx.fill();
 
     // Order labels
-    const orderLabel = i === 0 ? '1st Order' : (i === 1 ? '2nd Order' : (i === 2 ? '3rd Order' : `m=${m}`));
-    ctx.fillStyle = `rgba(255,255,255,${0.4 + alpha})`;
-    ctx.font = 'bold 9px Inter';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '9px Inter';
     ctx.textAlign = 'left';
-    ctx.fillText(orderLabel, screenX + 14, laserY - dy + 3);
-    ctx.fillText(orderLabel, screenX + 14, laserY + dy + 3);
+    ctx.fillText(`m=${m}`, screenX + 14, laserY - dy + 3);
+    ctx.fillText(`m=${m}`, screenX + 14, laserY + dy + 3);
   });
 
   // Central dot on screen
@@ -476,10 +451,10 @@ function initDiagramCanvas() {
   ctx.arc(screenX + 3, laserY, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.font = 'bold 9px Inter';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '9px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Central Spot', screenX + 14, laserY + 3);
+  ctx.fillText('m=0', screenX + 14, laserY + 3);
 
   // Distance label
   ctx.strokeStyle = 'rgba(255,255,255,0.2)';
@@ -675,22 +650,17 @@ function drawSimulation() {
       ctx.arc(screenX + 1, centerY, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.font = 'bold 9px JetBrains Mono';
-      ctx.textAlign = 'left';
-      ctx.fillText('Central Spot', screenX + 12, centerY + 3);
 
       // Higher order beams
       Object.entries(orders).forEach(([m, angle], i) => {
         const thetaRad = angle * Math.PI / 180;
         const dx = gratingX - screenX;
         const dy = dx * Math.tan(thetaRad);
-        const intensity = Math.max(0.15, 0.9 - i * 0.3); // Sharp drop-off
-        const spotRadius = Math.max(1.5, 4.5 - i * 1.0); // Dots get smaller
+        const intensity = Math.max(0.15, 0.8 - i * 0.2);
 
         // Up beam
-        ctx.strokeStyle = `rgba(255, 23, 68, ${intensity * 0.6})`;
-        ctx.lineWidth = Math.max(1, 2.5 - i * 0.5);
+        ctx.strokeStyle = `rgba(255, 23, 68, ${intensity})`;
+        ctx.lineWidth = Math.max(1, 2 - i * 0.3);
         ctx.beginPath();
         ctx.moveTo(gratingX, centerY);
         ctx.lineTo(screenX + 4, centerY - dy);
@@ -703,27 +673,27 @@ function drawSimulation() {
         ctx.stroke();
 
         // Spots on screen
+        const spotR = Math.max(2, 4 - i);
         ctx.fillStyle = `rgba(255, 23, 68, ${intensity + 0.1})`;
         ctx.shadowColor = '#ff1744';
-        ctx.shadowBlur = Math.max(0, 15 - i * 5); // Glow decreases
+        ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.arc(screenX + 1, centerY - dy, spotRadius, 0, Math.PI * 2);
+        ctx.arc(screenX + 1, centerY - dy, spotR, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(screenX + 1, centerY + dy, spotRadius, 0, Math.PI * 2);
+        ctx.arc(screenX + 1, centerY + dy, spotR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
 
         // Labels
-        const labelText = i === 0 ? '1st Order' : (i === 1 ? '2nd Order' : (i === 2 ? '3rd Order' : `m=${m}`));
-        ctx.fillStyle = `rgba(255,255,255,${0.3 + intensity * 0.7})`;
-        ctx.font = 'bold 9px JetBrains Mono';
+        ctx.fillStyle = `rgba(255,255,255,${intensity * 0.6})`;
+        ctx.font = '9px JetBrains Mono';
         ctx.textAlign = 'left';
-        ctx.fillText(labelText, screenX + 12, centerY - dy + 3);
-        ctx.fillText(labelText, screenX + 12, centerY + dy + 3);
+        ctx.fillText(`m=${m}`, screenX + 12, centerY - dy + 3);
+        ctx.fillText(`m=${m}`, screenX + 12, centerY + dy + 3);
       });
     } else {
-      // No grating — beam hits screen directly
+      // No grating ΓÇö beam hits screen directly
       ctx.fillStyle = '#ff1744';
       ctx.shadowColor = '#ff1744';
       ctx.shadowBlur = 20;
@@ -788,7 +758,7 @@ function drawSimulation() {
     ctx.fillStyle = '#00e5ff';
     ctx.font = 'bold 12px JetBrains Mono';
     ctx.textAlign = 'center';
-    ctx.fillText(`θ = ${Math.abs(state.detectorAngle).toFixed(1)}°`, gratingX - 60, centerY - 50);
+    ctx.fillText(`╬╕ = ${Math.abs(state.detectorAngle).toFixed(1)}┬░`, gratingX - 60, centerY - 50);
 
     // Detector label
     ctx.fillStyle = 'rgba(0,229,255,0.6)';
@@ -829,7 +799,7 @@ function drawSpectrometer() {
   const canvas = specCanvas;
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  const H = getCanvasHeight(550, 420, 380);
+  const H = getCanvasHeight(400, 300, 260);
   canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
   canvas.style.height = H + 'px';
@@ -842,445 +812,129 @@ function drawSpectrometer() {
   ctx.fillStyle = '#020208';
   ctx.fillRect(0, 0, W, H);
 
-  // =========== TOP: SPECTROMETER TOP VIEW ===========
-  const specH = H * 0.55; // top portion for spectrometer
   const cx = W / 2;
-  const cy = specH / 2 + 10;
-  const R = Math.min(W, specH) * 0.36;
+  const cy = H / 2;
+  const R = Math.min(W, H) * 0.38;
 
-  // Spectrometer body - outer ring with metallic gradient
-  const bodyGrad = ctx.createRadialGradient(cx, cy, R - 5, cx, cy, R + 5);
-  bodyGrad.addColorStop(0, 'rgba(60,60,80,0.3)');
-  bodyGrad.addColorStop(0.5, 'rgba(40,40,60,0.5)');
-  bodyGrad.addColorStop(1, 'rgba(20,20,40,0.2)');
-  ctx.fillStyle = bodyGrad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R + 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Outer circle
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 3;
+  // Outer circle (spectrometer body)
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, R, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Inner circle (prism table area)
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1;
+  // Inner circle
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.beginPath();
-  ctx.arc(cx, cy, R * 0.25, 0, Math.PI * 2);
+  ctx.arc(cx, cy, R * 0.7, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Degree markings on circular scale
-  for (let deg = 0; deg < 360; deg += 1) {
+  // Degree markings
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '8px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (let deg = 0; deg < 360; deg += 5) {
     const rad = (deg - 90) * Math.PI / 180;
     const isMajor = deg % 30 === 0;
-    const isMid = deg % 10 === 0;
-    const isMinor5 = deg % 5 === 0;
+    const isMinor10 = deg % 10 === 0;
 
-    let innerR, lineWidth, alpha;
-    if (isMajor) { innerR = R - 18; lineWidth = 2; alpha = 0.5; }
-    else if (isMid) { innerR = R - 12; lineWidth = 1; alpha = 0.3; }
-    else if (isMinor5) { innerR = R - 8; lineWidth = 0.8; alpha = 0.2; }
-    else { innerR = R - 4; lineWidth = 0.3; alpha = 0.08; }
+    const innerR = R - (isMajor ? 15 : isMinor10 ? 10 : 5);
+    ctx.strokeStyle = isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = isMajor ? 1.5 : 0.5;
 
-    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-    ctx.lineWidth = lineWidth;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
     ctx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
     ctx.stroke();
 
-    // Degree labels
     if (isMajor) {
-      const labelR = R - 28;
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = 'bold 9px JetBrains Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${deg}°`, cx + Math.cos(rad) * labelR, cy + Math.sin(rad) * labelR);
+      const labelR = R - 24;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillText(`${deg}┬░`, cx + Math.cos(rad) * labelR, cy + Math.sin(rad) * labelR);
     }
   }
 
-  // Collimator arm (fixed, pointing right = 0°)
-  ctx.strokeStyle = 'rgba(255, 23, 68, 0.6)';
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
+  // Collimator arm (fixed, pointing right = 0┬░)
+  ctx.strokeStyle = 'rgba(255, 23, 68, 0.5)';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(cx + R * 0.25, cy);
-  ctx.lineTo(cx + R * 1.05, cy);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + R * 0.9, cy);
   ctx.stroke();
 
-  // Collimator body (rectangular end)
-  ctx.fillStyle = 'rgba(255, 23, 68, 0.15)';
-  ctx.strokeStyle = 'rgba(255, 23, 68, 0.4)';
-  ctx.lineWidth = 1.5;
+  // Laser source indicator
+  ctx.fillStyle = state.laserOn ? '#ff1744' : '#333';
   ctx.beginPath();
-  ctx.roundRect(cx + R * 0.85, cy - 10, 30, 20, 3);
+  ctx.arc(cx + R * 0.85, cy, 5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.stroke();
-
-  // Laser source label
-  ctx.fillStyle = state.laserOn ? '#ff4444' : '#444';
-  ctx.font = 'bold 8px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.fillText('LASER', cx + R * 1.0, cy - 16);
-  
-  // Laser indicator LED
   if (state.laserOn) {
-    ctx.fillStyle = '#ff1744';
     ctx.shadowColor = '#ff1744';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.arc(cx + R * 1.0, cy, 4, 0, Math.PI * 2);
+    ctx.shadowBlur = 10;
     ctx.fill();
     ctx.shadowBlur = 0;
   }
 
-  // Telescope arm (moveable)
+  // Telescope arm (moveable ΓÇö current detector angle)
   const armAngle = (180 + state.detectorAngle) * Math.PI / 180;
-  const armEndX = cx + Math.cos(armAngle) * R * 1.05;
-  const armEndY = cy + Math.sin(armAngle) * R * 1.05;
+  const armEndX = cx + Math.cos(armAngle) * R * 0.9;
+  const armEndY = cy + Math.sin(armAngle) * R * 0.9;
 
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.6)';
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(cx + Math.cos(armAngle) * R * 0.25, cy + Math.sin(armAngle) * R * 0.25);
+  ctx.moveTo(cx, cy);
   ctx.lineTo(armEndX, armEndY);
   ctx.stroke();
 
-  // Telescope body
-  const telesX = cx + Math.cos(armAngle) * R * 0.9;
-  const telesY = cy + Math.sin(armAngle) * R * 0.9;
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.15)';
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
-  ctx.lineWidth = 1.5;
+  // Detector
+  ctx.fillStyle = 'rgba(0, 229, 255, 0.3)';
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(armEndX, armEndY, 8, 0, Math.PI * 2);
+  ctx.arc(armEndX, armEndY, 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Detector label
-  ctx.fillStyle = '#00e5ff';
-  ctx.font = 'bold 8px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.fillText('DETECTOR', armEndX, armEndY - 14);
-
-  // Vernier I position indicator (on telescope arm side)
-  const v1Angle = armAngle;
-  const v1X = cx + Math.cos(v1Angle) * (R - 2);
-  const v1Y = cy + Math.sin(v1Angle) * (R - 2);
-  ctx.fillStyle = '#00e6ff';
-  ctx.beginPath();
-  ctx.arc(v1X, v1Y, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Vernier II position indicator (180° opposite)
-  const v2Angle = armAngle + Math.PI;
-  const v2X = cx + Math.cos(v2Angle) * (R - 2);
-  const v2Y = cy + Math.sin(v2Angle) * (R - 2);
-  ctx.fillStyle = '#ffab00';
-  ctx.beginPath();
-  ctx.arc(v2X, v2Y, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Vernier labels
-  ctx.font = '8px JetBrains Mono';
-  ctx.fillStyle = '#00e6ff';
-  ctx.fillText('V\u2081', v1X + (Math.cos(v1Angle) > 0 ? 12 : -12), v1Y + (Math.sin(v1Angle) > 0 ? 12 : -12));
-  ctx.fillStyle = '#ffab00';
-  ctx.fillText('V\u2082', v2X + (Math.cos(v2Angle) > 0 ? 12 : -12), v2Y + (Math.sin(v2Angle) > 0 ? 12 : -12));
-
   // Angle indicator arc
-  if (Math.abs(state.detectorAngle) > 0.3) {
+  if (Math.abs(state.detectorAngle) > 0.5) {
     ctx.strokeStyle = 'rgba(255, 171, 0, 0.5)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    const startAngle = Math.PI;
+    const startAngle = Math.PI; // 180┬░ = straight left
     const endAngle = armAngle;
-    ctx.arc(cx, cy, R * 0.35, Math.min(startAngle, endAngle), Math.max(startAngle, endAngle));
+    ctx.arc(cx, cy, R * 0.3, Math.min(startAngle, endAngle), Math.max(startAngle, endAngle));
     ctx.stroke();
-    ctx.setLineDash([]);
 
     // Angle value
     ctx.fillStyle = '#ffab00';
-    ctx.font = 'bold 13px JetBrains Mono';
+    ctx.font = 'bold 14px JetBrains Mono';
     ctx.textAlign = 'center';
     const midAngle = (startAngle + endAngle) / 2;
     ctx.fillText(
-      `\u03B8 = ${Math.abs(state.detectorAngle).toFixed(2)}\u00B0`,
-      cx + Math.cos(midAngle) * R * 0.22,
-      cy + Math.sin(midAngle) * R * 0.22
+      `${Math.abs(state.detectorAngle).toFixed(1)}┬░`,
+      cx + Math.cos(midAngle) * R * 0.2,
+      cy + Math.sin(midAngle) * R * 0.2
     );
   }
 
-  // Prism table (center) with grating
+  // Grating position (center)
   if (state.gratingPlaced) {
-    // Prism table circle
-    ctx.fillStyle = 'rgba(124, 77, 255, 0.1)';
-    ctx.strokeStyle = 'rgba(124, 77, 255, 0.4)';
+    ctx.fillStyle = 'rgba(124, 77, 255, 0.3)';
+    ctx.strokeStyle = '#7c4dff';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 0.22, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-
-    // Grating element (vertical line through center)
-    ctx.strokeStyle = '#7c4dff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - R * 0.18);
-    ctx.lineTo(cx, cy + R * 0.18);
-    ctx.stroke();
-
-    // Grating lines detail
-    ctx.strokeStyle = 'rgba(124, 77, 255, 0.3)';
-    ctx.lineWidth = 0.5;
-    for (let i = -6; i <= 6; i++) {
-      const gy = cy + i * (R * 0.025);
-      ctx.beginPath();
-      ctx.moveTo(cx - 4, gy);
-      ctx.lineTo(cx + 4, gy);
-      ctx.stroke();
-    }
-
-    // Grating label with d value
-    ctx.fillStyle = '#b388ff';
-    ctx.font = 'bold 9px JetBrains Mono';
-    ctx.textAlign = 'center';
-    ctx.fillText('GRATING', cx, cy + R * 0.22 + 14);
-    ctx.fillStyle = 'rgba(179,136,255,0.7)';
-    ctx.font = '8px JetBrains Mono';
-    ctx.fillText(`d = ${state.pitch.toExponential(3)} cm`, cx, cy + R * 0.22 + 26);
-    ctx.fillText(`(${state.linesPerCm} lines/cm)`, cx, cy + R * 0.22 + 37);
   }
 
-  // Component labels
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.font = '9px Inter, sans-serif';
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Spectrometer \u2014 Top View', cx, specH - 2);
-
-  // Legend
-  ctx.font = '8px JetBrains Mono';
-  ctx.textAlign = 'left';
-  const lx = 10;
-  [
-    { color: '#ff1744', label: 'Collimator (Laser)' },
-    { color: '#00e5ff', label: 'Telescope (Detector)' },
-    { color: '#7c4dff', label: 'Grating' },
-    { color: '#00e6ff', label: 'Vernier I (V\u2081)' },
-    { color: '#ffab00', label: 'Vernier II (V\u2082 = V\u2081 + 180\u00B0)' }
-  ].forEach((item, i) => {
-    const y = 16 + i * 14;
-    ctx.fillStyle = item.color;
-    ctx.fillRect(lx, y - 4, 8, 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(item.label, lx + 13, y + 3);
-  });
-
-  // =========== BOTTOM: REALISTIC MSR + VSR SCALE VIEW ===========
-  drawVernierScaleCloseup(ctx, W, specH, H - specH);
-}
-
-// ===== REALISTIC VERNIER SCALE CLOSE-UP =====
-function drawVernierScaleCloseup(ctx, W, startY, availH) {
-  const readings = getVernierReadings(state.detectorAngle);
-  const padding = 20;
-  const scaleW = W - padding * 2;
-  const scaleStartX = padding;
-  const scaleY = startY + 15;
-
-  // Title bar
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.fillRect(0, startY, W, availH);
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, startY);
-  ctx.lineTo(W, startY);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.7)';
-  ctx.font = 'bold 9px JetBrains Mono';
-  ctx.textAlign = 'left';
-  ctx.fillText('VERNIER I \u2014 SCALE CLOSE-UP', padding, scaleY + 4);
-
-  // d value display
-  ctx.fillStyle = 'rgba(179,136,255,0.8)';
-  ctx.font = 'bold 9px JetBrains Mono';
-  ctx.textAlign = 'right';
-  ctx.fillText(`d = ${state.pitch.toExponential(3)} cm  |  LC = 1/180\u00B0`, W - padding, scaleY + 4);
-
-  // ---- MAIN SCALE ----
-  const msrFloat = parseFloat(readings.msr1);
-  const vsd = readings.vsd1;
-  const LC = state.vernierConstant;
-  const totalReading = parseFloat(readings.total1);
-
-  // Show 5 main scale divisions centered around the reading
-  const centerMSD = msrFloat; // the MSR value
-  const msrStart = centerMSD - 1.5; // show 1.5° before
-  const msrEnd = centerMSD + 2.0;   // show 2° after
-  const msrRange = msrEnd - msrStart;
-  const pixelsPerDeg = scaleW / msrRange;
-
-  const msrY = scaleY + 30;
-  const msrH = 40;
-
-  // Main scale background
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
-  ctx.beginPath();
-  ctx.roundRect(scaleStartX, msrY, scaleW, msrH, 4);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Main scale tick marks (every 0.5°)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (let d = Math.ceil(msrStart * 2) / 2; d <= msrEnd; d += 0.5) {
-    const x = scaleStartX + (d - msrStart) * pixelsPerDeg;
-    if (x < scaleStartX || x > scaleStartX + scaleW) continue;
-
-    const isWholeDeg = Math.abs(d - Math.round(d)) < 0.01;
-    const tickH = isWholeDeg ? msrH * 0.7 : msrH * 0.5;
-
-    ctx.strokeStyle = isWholeDeg ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = isWholeDeg ? 1.5 : 1;
-    ctx.beginPath();
-    ctx.moveTo(x, msrY);
-    ctx.lineTo(x, msrY + tickH);
-    ctx.stroke();
-
-    // Label
-    ctx.fillStyle = isWholeDeg ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
-    ctx.font = isWholeDeg ? 'bold 10px JetBrains Mono' : '8px JetBrains Mono';
-    const label = d >= 0 ? d.toFixed(1) + '\u00B0' : (360 + d).toFixed(1) + '\u00B0';
-    ctx.fillText(label, x, msrY + tickH + 3);
-  }
-
-  // Label
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.font = '7px JetBrains Mono';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('M.S.', scaleStartX - 4, msrY + msrH / 2);
-
-  // ---- VERNIER SCALE ----
-  const vsrY = msrY + msrH + 2;
-  const vsrH = 30;
-  const vernierDivisions = 90; // 90 divisions for LC = 1/180°
-  const vernierSpan = 0.5; // 90 VSD = 89 MSD (so vernier covers slightly less than 0.5°)
-  const vernierPixelSpan = vernierSpan * pixelsPerDeg;
-
-  // Position vernier: the zero of vernier is at the total reading position
-  const vernierZeroX = scaleStartX + (totalReading - msrStart) * pixelsPerDeg;
-  const vernierStartX = vernierZeroX;
-  const pixelsPerVSD = vernierPixelSpan / vernierDivisions;
-
-  // Vernier scale background
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.03)';
-  ctx.beginPath();
-  ctx.roundRect(Math.max(scaleStartX, vernierStartX - 10), vsrY, Math.min(scaleW, vernierPixelSpan + 20), vsrH, 4);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Vernier tick marks
-  for (let v = 0; v <= vernierDivisions; v += 1) {
-    const x = vernierStartX + v * pixelsPerVSD;
-    if (x < scaleStartX - 5 || x > scaleStartX + scaleW + 5) continue;
-
-    const isMajor = v % 10 === 0;
-    const isMid = v % 5 === 0;
-    const tickH = isMajor ? vsrH * 0.7 : isMid ? vsrH * 0.5 : vsrH * 0.3;
-    const isCoinciding = v === vsd;
-
-    ctx.strokeStyle = isCoinciding ? '#ff1744' :
-      isMajor ? 'rgba(0, 229, 255, 0.5)' : 'rgba(0, 229, 255, 0.2)';
-    ctx.lineWidth = isCoinciding ? 2.5 : isMajor ? 1.2 : 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, vsrY + vsrH);
-    ctx.lineTo(x, vsrY + vsrH - tickH);
-    ctx.stroke();
-
-    // Coinciding line highlight
-    if (isCoinciding) {
-      ctx.fillStyle = '#ff1744';
-      ctx.shadowColor = '#ff1744';
-      ctx.shadowBlur = 6;
-      // Arrow pointing up
-      ctx.beginPath();
-      ctx.moveTo(x, vsrY + vsrH + 2);
-      ctx.lineTo(x - 4, vsrY + vsrH + 9);
-      ctx.lineTo(x + 4, vsrY + vsrH + 9);
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // Label for coinciding division
-      ctx.fillStyle = '#ff1744';
-      ctx.font = 'bold 8px JetBrains Mono';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`VSD=${v}`, x, vsrY + vsrH + 11);
-    }
-
-    // Major labels
-    if (isMajor && v <= vernierDivisions) {
-      ctx.fillStyle = 'rgba(0,229,255,0.5)';
-      ctx.font = '7px JetBrains Mono';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`${v}`, x, vsrY + vsrH - tickH - 2);
-    }
-  }
-
-  // Label
-  ctx.fillStyle = 'rgba(0,229,255,0.3)';
-  ctx.font = '7px JetBrains Mono';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('V.S.', scaleStartX - 4, vsrY + vsrH / 2);
-
-  // ---- READING SUMMARY ----
-  const summaryY = vsrY + vsrH + 24;
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.beginPath();
-  ctx.roundRect(scaleStartX, summaryY, scaleW, 44, 6);
-  ctx.fill();
-
-  ctx.font = 'bold 10px JetBrains Mono';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
-  // Vernier I reading
-  ctx.fillStyle = '#00e6ff';
-  ctx.fillText('V\u2081:', scaleStartX + 10, summaryY + 6);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText(`MSR = ${readings.msr1}\u00B0  +  VSD \u00D7 LC = ${vsd} \u00D7 (1/180)\u00B0 = ${readings.vsr1}\u00B0`, scaleStartX + 35, summaryY + 6);
-  ctx.fillStyle = '#00e676';
-  ctx.font = 'bold 11px JetBrains Mono';
-  ctx.textAlign = 'right';
-  ctx.fillText(`\u03B8\u2081 = ${readings.total1}\u00B0`, scaleStartX + scaleW - 10, summaryY + 6);
-
-  // Vernier II reading
-  ctx.textAlign = 'left';
-  ctx.font = 'bold 10px JetBrains Mono';
-  ctx.fillStyle = '#ffab00';
-  ctx.fillText('V\u2082:', scaleStartX + 10, summaryY + 24);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText(`MSR = ${readings.msr2}\u00B0  +  VSD \u00D7 LC = ${readings.vsd2} \u00D7 (1/180)\u00B0 = ${readings.vsr2}\u00B0`, scaleStartX + 35, summaryY + 24);
-  ctx.fillStyle = '#00e676';
-  ctx.font = 'bold 11px JetBrains Mono';
-  ctx.textAlign = 'right';
-  ctx.fillText(`\u03B8\u2082 = ${readings.total2}\u00B0`, scaleStartX + scaleW - 10, summaryY + 24);
+  ctx.fillText('Spectrometer (Top View)', cx, H - 15);
 }
 
 // ===== EXPERIMENT CONTROLS =====
@@ -1289,7 +943,7 @@ function toggleLaser() {
   const btn = document.getElementById('btnLaser');
   const status = document.getElementById('laserStatus');
 
-  btn.textContent = state.laserOn ? '💡 Turn OFF Laser' : '💡 Turn ON Laser';
+  btn.textContent = state.laserOn ? '≡ƒÆí Turn OFF Laser' : '≡ƒÆí Turn ON Laser';
   btn.classList.toggle('btn-primary', !state.laserOn);
   btn.classList.toggle('btn-secondary', state.laserOn);
 
@@ -1301,7 +955,7 @@ function toggleLaser() {
   drawSimulation();
   drawSpectrometer();
   updateMeasurements();
-  showToast(state.laserOn ? '💡 Laser turned ON' : '🔌 Laser turned OFF');
+  showToast(state.laserOn ? '≡ƒÆí Laser turned ON' : '≡ƒöî Laser turned OFF');
 }
 
 function placeGrating() {
@@ -1309,19 +963,19 @@ function placeGrating() {
   const btn = document.getElementById('btnGrating');
   const status = document.getElementById('gratingStatus');
 
-  btn.textContent = state.gratingPlaced ? '📊 Remove Grating' : '📊 Place Grating';
+  btn.textContent = state.gratingPlaced ? '≡ƒôè Remove Grating' : '≡ƒôè Place Grating';
   status.className = `status-indicator ${state.gratingPlaced ? 'status-on' : 'status-off'}`;
   status.innerHTML = `<span class="status-dot"></span> ${state.gratingPlaced ? 'Grating Placed' : 'No Grating'}`;
 
   drawSimulation();
   drawSpectrometer();
   updateMeasurements();
-  showToast(state.gratingPlaced ? '📊 Grating placed on prism table' : '📊 Grating removed');
+  showToast(state.gratingPlaced ? '≡ƒôè Grating placed on prism table' : '≡ƒôè Grating removed');
 }
 
 function moveDetector(angle) {
   state.detectorAngle = parseFloat(angle);
-  document.getElementById('detectorAngleDisplay').textContent = `${angle > 0 ? '+' : ''}${parseFloat(angle).toFixed(1)}°`;
+  document.getElementById('detectorAngleDisplay').textContent = `${angle > 0 ? '+' : ''}${parseFloat(angle).toFixed(1)}┬░`;
 
   drawSimulation();
   drawSpectrometer();
@@ -1355,20 +1009,16 @@ function jumpToOrder(m) {
     document.getElementById('detectorSlider').value = angle;
     moveDetector(angle);
   } else {
-    showToast(`⚠️ Order ${absM} does not exist for current grating`, 'error');
+    showToast(`ΓÜá∩╕Å Order ${absM} does not exist for current grating`, 'error');
   }
 }
 
 function updateGrating(lines) {
   state.linesPerCm = parseInt(lines);
   document.getElementById('linesDisplay').textContent = lines;
-  document.getElementById('pitchDisplay').textContent = `${state.pitchMicrons.toFixed(3)} μm`;
+  document.getElementById('pitchDisplay').textContent = `${state.pitchMicrons.toFixed(3)} ╬╝m`;
   document.getElementById('obsPitch').value = `${state.pitch.toExponential(3)} cm`;
   document.getElementById('obsLines').value = lines;
-  const vernierD = document.getElementById('vernierDValue');
-  if (vernierD) {
-    vernierD.textContent = `${state.pitch.toExponential(3)} cm`;
-  }
 
   drawSimulation();
   initDiagramCanvas();
@@ -1381,9 +1031,9 @@ function updateMeasurements() {
   const intensity = getIntensityAtAngle(angle);
   const order = findNearestOrder(angle);
 
-  document.getElementById('currentAngle').innerHTML = `${Math.abs(angle).toFixed(2)}<span class="m-unit">°</span>`;
+  document.getElementById('currentAngle').innerHTML = `${Math.abs(angle).toFixed(2)}<span class="m-unit">┬░</span>`;
   document.getElementById('detectorIntensity').innerHTML = `${intensity.toFixed(0)}<span class="m-unit">%</span>`;
-  document.getElementById('currentOrder').textContent = order !== null ? (order === 0 ? '0 (central)' : `${order > 0 ? '+' : ''}${order}`) : '—';
+  document.getElementById('currentOrder').textContent = order !== null ? (order === 0 ? '0 (central)' : `${order > 0 ? '+' : ''}${order}`) : 'ΓÇö';
 
   // Compute wavelength for current position
   if (order && order !== 0) {
@@ -1393,32 +1043,35 @@ function updateMeasurements() {
     const lambdaNm = lambda * 1e7; // convert cm to nm
     document.getElementById('computedLambda').innerHTML = `${lambdaNm.toFixed(1)}<span class="m-unit">nm</span>`;
   } else {
-    document.getElementById('computedLambda').innerHTML = `—<span class="m-unit">nm</span>`;
+    document.getElementById('computedLambda').innerHTML = `ΓÇö<span class="m-unit">nm</span>`;
   }
 
   // Update vernier readings
   const readings = getVernierReadings(angle);
-  document.getElementById('msr1').innerHTML = `${readings.msr1}<span class="reading-unit">°</span>`;
-  document.getElementById('vsr1').innerHTML = `${readings.vsd1}<span class="reading-unit"> div</span>`;
-  document.getElementById('total1').innerHTML = `${readings.total1}<span class="reading-unit">°</span>`;
-  document.getElementById('total2').innerHTML = `${readings.total2}<span class="reading-unit">°</span>`;
+  const readings2 = getVernierReadings(angle + addNoise(0, 0.05)); // Vernier II slightly different
+  document.getElementById('msr1').innerHTML = `${readings.msr}<span class="reading-unit">┬░</span>`;
+  document.getElementById('vsr1').innerHTML = `${readings.vsr}<span class="reading-unit">'</span>`;
+  document.getElementById('total1').innerHTML = `${readings.total}<span class="reading-unit">┬░</span>`;
+  document.getElementById('total2').innerHTML = `${readings2.total}<span class="reading-unit">┬░</span>`;
 }
 
 // ===== RECORD READINGS =====
 function recordReading() {
   if (!state.laserOn || !state.gratingPlaced) {
-    showToast('⚠️ Turn on laser and place grating first!', 'error');
+    showToast('ΓÜá∩╕Å Turn on laser and place grating first!', 'error');
     return;
   }
 
   const order = findNearestOrder(state.detectorAngle);
   if (order === null) {
-    showToast('⚠️ Move detector to a diffraction order peak!', 'error');
+    showToast('ΓÜá∩╕Å Move detector to a diffraction order peak!', 'error');
     return;
   }
 
   const angle = state.detectorAngle;
-  const readings = getVernierReadings(angle);
+  const absAngle = Math.abs(angle);
+  const readings = getVernierReadings(absAngle);
+  const readings2 = getVernierReadings(absAngle + addNoise(0, 0.02));
 
   const absOrder = Math.abs(order);
   const side = order >= 0 ? 'r' : 'l'; // right or left
@@ -1435,10 +1088,10 @@ function recordReading() {
   const el3 = document.getElementById(msrId2);
   const el4 = document.getElementById(vsrId2);
 
-  if (el1) el1.value = readings.msr1;
-  if (el2) el2.value = readings.vsr1;
-  if (el3) el3.value = readings.msr2;
-  if (el4) el4.value = readings.vsr2;
+  if (el1) el1.value = readings.msr;
+  if (el2) el2.value = (parseFloat(readings.vsr) / 60).toFixed(2);
+  if (el3) el3.value = readings2.msr;
+  if (el4) el4.value = (parseFloat(readings2.vsr) / 60).toFixed(2);
 
   // For central order, fill both sides
   if (order === 0) {
@@ -1446,26 +1099,26 @@ function recordReading() {
     const vsrIdR1 = `t1_c_r_v1_vsr`;
     const msrIdR2 = `t1_c_r_v2_msr`;
     const vsrIdR2 = `t1_c_r_v2_vsr`;
-    document.getElementById(msrIdR1).value = readings.msr1;
-    document.getElementById(vsrIdR1).value = readings.vsr1;
-    document.getElementById(msrIdR2).value = readings.msr2;
-    document.getElementById(vsrIdR2).value = readings.vsr2;
+    document.getElementById(msrIdR1).value = readings.msr;
+    document.getElementById(vsrIdR1).value = (parseFloat(readings.vsr) / 60).toFixed(2);
+    document.getElementById(msrIdR2).value = readings2.msr;
+    document.getElementById(vsrIdR2).value = (parseFloat(readings2.vsr) / 60).toFixed(2);
 
     const msrIdL1 = `t1_c_l_v1_msr`;
     const vsrIdL1 = `t1_c_l_v1_vsr`;
     const msrIdL2 = `t1_c_l_v2_msr`;
     const vsrIdL2 = `t1_c_l_v2_vsr`;
-    document.getElementById(msrIdL1).value = readings.msr1;
-    document.getElementById(vsrIdL1).value = readings.vsr1;
-    document.getElementById(msrIdL2).value = readings.msr2;
-    document.getElementById(vsrIdL2).value = readings.vsr2;
+    document.getElementById(msrIdL1).value = readings.msr;
+    document.getElementById(vsrIdL1).value = (parseFloat(readings.vsr) / 60).toFixed(2);
+    document.getElementById(msrIdL2).value = readings2.msr;
+    document.getElementById(vsrIdL2).value = (parseFloat(readings2.vsr) / 60).toFixed(2);
   }
 
   // Trigger table update
   updateTable1Totals();
 
   const sideName = order === 0 ? 'Central' : (order > 0 ? 'Right' : 'Left');
-  showToast(`📝 Recorded ${sideName} order ${absOrder} readings`);
+  showToast(`≡ƒô¥ Recorded ${sideName} order ${absOrder} readings`);
 }
 
 // ===== TABLE CALCULATIONS =====
@@ -1494,7 +1147,7 @@ function updateTable1Totals() {
           if (!isNaN(msr) && !isNaN(vsr)) {
             totalEl.textContent = (msr + vsr).toFixed(2);
           } else {
-            totalEl.textContent = '—';
+            totalEl.textContent = 'ΓÇö';
           }
         }
       });
@@ -1520,12 +1173,8 @@ function calculateWavelength() {
     const rv2 = parseFloat(document.getElementById(`t1_${m}_r_v2_total`)?.textContent);
 
     if (!isNaN(lv1) && !isNaN(rv1) && !isNaN(lv2) && !isNaN(rv2)) {
-      let twoTheta1 = Math.abs(lv1 - rv1);
-      if (twoTheta1 > 180) twoTheta1 = 360 - twoTheta1;
-      
-      let twoTheta2 = Math.abs(lv2 - rv2);
-      if (twoTheta2 > 180) twoTheta2 = 360 - twoTheta2;
-      
+      const twoTheta1 = Math.abs(lv1 - rv1);
+      const twoTheta2 = Math.abs(lv2 - rv2);
       const twoTheta = (twoTheta1 + twoTheta2) / 2;
       const theta = twoTheta / 2;
       const thetaRad = theta * Math.PI / 180;
@@ -1555,10 +1204,10 @@ function calculateWavelength() {
     } else {
       // Clear if data missing
       ['2theta1', '2theta2', '2theta', 'theta', 'lambda_cm', 'lambda_nm'].forEach(field => {
-        document.getElementById(`t2_${m}_${field}`).textContent = '—';
+        document.getElementById(`t2_${m}_${field}`).textContent = 'ΓÇö';
       });
-      document.getElementById(`res_lambda${m}`).textContent = '—';
-      document.getElementById(`err_${m}`).textContent = '—';
+      document.getElementById(`res_lambda${m}`).textContent = 'ΓÇö';
+      document.getElementById(`err_${m}`).textContent = 'ΓÇö';
     }
   });
 
@@ -1566,16 +1215,16 @@ function calculateWavelength() {
   if (lambdas.length > 0) {
     const mean = lambdas.reduce((a, b) => a + b, 0) / lambdas.length;
     document.getElementById('res_lambda_mean').textContent = mean.toFixed(1);
-    showToast(`✅ Wavelength calculated! λ_mean = ${mean.toFixed(1)} nm`);
+    showToast(`Γ£à Wavelength calculated! ╬╗_mean = ${mean.toFixed(1)} nm`);
   } else {
-    document.getElementById('res_lambda_mean').textContent = '—';
-    showToast('⚠️ Please fill observation tables first!', 'error');
+    document.getElementById('res_lambda_mean').textContent = 'ΓÇö';
+    showToast('ΓÜá∩╕Å Please fill observation tables first!', 'error');
   }
 }
 
 function autoFillTable1() {
   if (!state.laserOn || !state.gratingPlaced) {
-    showToast('⚠️ Turn on laser and place grating first!', 'error');
+    showToast('ΓÜá∩╕Å Turn on laser and place grating first!', 'error');
     return;
   }
 
@@ -1585,12 +1234,13 @@ function autoFillTable1() {
   // Central order (direct readings)
   const centralReading = addNoise(0, 0.02);
   const cr1 = getVernierReadings(centralReading);
+  const cr2 = getVernierReadings(centralReading + addNoise(0, 0.01));
 
   ['l', 'r'].forEach(side => {
-    document.getElementById(`t1_c_${side}_v1_msr`).value = cr1.msr1;
-    document.getElementById(`t1_c_${side}_v1_vsr`).value = cr1.vsr1;
-    document.getElementById(`t1_c_${side}_v2_msr`).value = cr1.msr2;
-    document.getElementById(`t1_c_${side}_v2_vsr`).value = cr1.vsr2;
+    document.getElementById(`t1_c_${side}_v1_msr`).value = cr1.msr;
+    document.getElementById(`t1_c_${side}_v1_vsr`).value = (parseFloat(cr1.vsr) / 60).toFixed(2);
+    document.getElementById(`t1_c_${side}_v2_msr`).value = cr2.msr;
+    document.getElementById(`t1_c_${side}_v2_vsr`).value = (parseFloat(cr2.vsr) / 60).toFixed(2);
   });
 
   // Higher orders
@@ -1599,37 +1249,41 @@ function autoFillTable1() {
       // Left side
       const leftAngle = orders[m] + addNoise(0, 0.03);
       const lr1 = getVernierReadings(leftAngle);
-      document.getElementById(`t1_${m}_l_v1_msr`).value = lr1.msr1;
-      document.getElementById(`t1_${m}_l_v1_vsr`).value = lr1.vsr1;
-      document.getElementById(`t1_${m}_l_v2_msr`).value = lr1.msr2;
-      document.getElementById(`t1_${m}_l_v2_vsr`).value = lr1.vsr2;
+      const lr2 = getVernierReadings(leftAngle + addNoise(0, 0.02));
+      document.getElementById(`t1_${m}_l_v1_msr`).value = lr1.msr;
+      document.getElementById(`t1_${m}_l_v1_vsr`).value = (parseFloat(lr1.vsr) / 60).toFixed(2);
+      document.getElementById(`t1_${m}_l_v2_msr`).value = lr2.msr;
+      document.getElementById(`t1_${m}_l_v2_vsr`).value = (parseFloat(lr2.vsr) / 60).toFixed(2);
 
-      // Right side
-      const rightAngle = -orders[m] + addNoise(0, 0.03);
+      // Right side (negative angle but same magnitude, different noise)
+      const rightAngle = -(orders[m] + addNoise(0, 0.03));
       const rr1 = getVernierReadings(rightAngle);
-      document.getElementById(`t1_${m}_r_v1_msr`).value = rr1.msr1;
-      document.getElementById(`t1_${m}_r_v1_vsr`).value = rr1.vsr1;
-      document.getElementById(`t1_${m}_r_v2_msr`).value = rr1.msr2;
-      document.getElementById(`t1_${m}_r_v2_vsr`).value = rr1.vsr2;
+      const rr2 = getVernierReadings(rightAngle + addNoise(0, 0.02));
+      // Right side readings: negative angles, so total is negative
+      // We store the actual scale reading which would be the absolute value for the spectrometer
+      document.getElementById(`t1_${m}_r_v1_msr`).value = (-parseFloat(rr1.msr)).toFixed(2);
+      document.getElementById(`t1_${m}_r_v1_vsr`).value = (parseFloat(rr1.vsr) / 60).toFixed(2);
+      document.getElementById(`t1_${m}_r_v2_msr`).value = (-parseFloat(rr2.msr)).toFixed(2);
+      document.getElementById(`t1_${m}_r_v2_vsr`).value = (parseFloat(rr2.vsr) / 60).toFixed(2);
     }
   });
 
   updateTable1Totals();
-  showToast('🤖 Table 1 auto-filled from simulation data!');
+  showToast('≡ƒñû Table 1 auto-filled from simulation data!');
 }
 
 function clearTable1() {
   document.querySelectorAll('#table1 input').forEach(input => input.value = '');
-  document.querySelectorAll('#table1 .computed').forEach(el => el.textContent = '—');
-  showToast('🗑️ Table 1 cleared');
+  document.querySelectorAll('#table1 .computed').forEach(el => el.textContent = 'ΓÇö');
+  showToast('≡ƒùæ∩╕Å Table 1 cleared');
 }
 
 function clearTable2() {
-  document.querySelectorAll('#table2 .computed').forEach(el => el.textContent = '—');
+  document.querySelectorAll('#table2 .computed').forEach(el => el.textContent = 'ΓÇö');
   ['res_lambda1', 'res_lambda2', 'res_lambda3', 'res_lambda_mean', 'err_1', 'err_2', 'err_3'].forEach(id => {
-    document.getElementById(id).textContent = '—';
+    document.getElementById(id).textContent = 'ΓÇö';
   });
-  showToast('🗑️ Table 2 and results cleared');
+  showToast('≡ƒùæ∩╕Å Table 2 and results cleared');
 }
 
 // ===== QUIZ =====
@@ -1661,13 +1315,13 @@ function submitQuiz() {
     if (selected === correct) {
       score++;
       feedback.className = 'quiz-feedback show correct';
-      feedback.textContent = `✅ Correct! ${quizExplanations[qId]}`;
+      feedback.textContent = `Γ£à Correct! ${quizExplanations[qId]}`;
     } else if (selected !== undefined) {
       feedback.className = 'quiz-feedback show incorrect';
-      feedback.textContent = `❌ Incorrect. ${quizExplanations[qId]}`;
+      feedback.textContent = `Γ¥î Incorrect. ${quizExplanations[qId]}`;
     } else {
       feedback.className = 'quiz-feedback show incorrect';
-      feedback.textContent = `⚠️ Not answered. ${quizExplanations[qId]}`;
+      feedback.textContent = `ΓÜá∩╕Å Not answered. ${quizExplanations[qId]}`;
     }
   });
 
@@ -1675,7 +1329,7 @@ function submitQuiz() {
   scoreDiv.classList.add('show');
   document.getElementById('scoreValue').textContent = `${score}/${total}`;
 
-  showToast(`📝 Quiz submitted: ${score}/${total} correct!`);
+  showToast(`≡ƒô¥ Quiz submitted: ${score}/${total} correct!`);
 }
 
 function resetQuiz() {
@@ -1687,7 +1341,7 @@ function resetQuiz() {
   });
   Object.keys(quizSelected).forEach(k => delete quizSelected[k]);
   document.getElementById('quizScore').classList.remove('show');
-  showToast('🔄 Quiz reset');
+  showToast('≡ƒöä Quiz reset');
 }
 
 // ===== TOAST =====
