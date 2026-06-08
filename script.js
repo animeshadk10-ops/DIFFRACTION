@@ -119,8 +119,8 @@ function getVernierReadings(angleDeg) {
   const vsd1 = Math.round(remainder1 / LC); // which vernier division coincides
   const total1 = msr1 + vsd1 * LC;
   
-  // Vernier II = Vernier I + 180° (diametrically opposite)
-  const noisy2 = total1 + 180;
+  // Vernier II = Vernier I + 180° (diametrically opposite), wrapped to 0-360°
+  const noisy2 = (total1 + 180) % 360;
   const msr2 = Math.floor(noisy2 * 2) / 2;
   const remainder2 = noisy2 - msr2;
   const vsd2 = Math.round(remainder2 / LC);
