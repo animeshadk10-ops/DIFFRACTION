@@ -1492,7 +1492,7 @@ function updateTable1Totals() {
           const msr = parseFloat(msrEl.value);
           const vsr = parseFloat(vsrEl.value);
           if (!isNaN(msr) && !isNaN(vsr)) {
-            totalEl.textContent = (msr + vsr).toFixed(2);
+            totalEl.textContent = (msr + vsr).toFixed(4);
           } else {
             totalEl.textContent = '—';
           }
