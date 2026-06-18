@@ -183,57 +183,77 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initNavigation() {
-  const navbar = document.getElementById('navbar');
-  const toggle = document.getElementById('mobileToggle');
-  const links = document.getElementById('navLinks');
+  const navItems = document.querySelectorAll('.custom-nav-item');
+  const pages = document.querySelectorAll('.tab-page');
 
-  // Scroll effect
-  window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 50);
-    updateActiveNav();
-  });
+  function showTab(tabId) {
+    // Hide all pages
+    pages.forEach(page => {
+      page.classList.remove('active-page');
+    });
 
-  // Mobile menu toggle with animation
-  toggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = links.classList.toggle('open');
-    toggle.classList.toggle('active', isOpen);
-    // Prevent body scroll when menu is open
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-  });
+    // Remove active class from all nav items
+    navItems.forEach(item => {
+      item.classList.remove('active');
+    });
 
-  // Close mobile on link click
-  links.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      links.classList.remove('open');
-      toggle.classList.remove('active');
-      document.body.style.overflow = '';
+    // Show selected page
+    const activePage = document.getElementById(`page-${tabId}`);
+    if (activePage) {
+      activePage.classList.add('active-page');
+    }
+
+    // Set active class on nav item
+    const activeNav = document.querySelector(`.custom-nav-item[data-tab="${tabId}"]`);
+    if (activeNav) {
+      activeNav.classList.add('active');
+    }
+
+    // Update URL hash
+    if (history.replaceState) {
+      history.replaceState(null, null, `#${tabId}`);
+    } else {
+      window.location.hash = tabId;
+    }
+
+    // Reset window scroll to top on tab change
+    window.scrollTo(0, 0);
+
+    // Trigger canvas resizing and redraws if we switched to the Experiment page!
+    if (tabId === 'experiment') {
+      setTimeout(() => {
+        // Re-initialize and resize canvases so they fit correctly after display: none -> block
+        initSimulationCanvas();
+        initSpectrometerCanvas();
+        resizeSimCanvas();
+        drawSimulation();
+        drawSpectrometer();
+      }, 50); // small delay to allow DOM transition to finish
+    }
+  }
+
+  // Click event listeners
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const tabId = item.getAttribute('data-tab');
+      showTab(tabId);
     });
   });
 
-  // Close menu when tapping outside
-  document.addEventListener('click', (e) => {
-    if (links.classList.contains('open') &&
-        !links.contains(e.target) &&
-        !toggle.contains(e.target)) {
-      links.classList.remove('open');
-      toggle.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-  });
-}
+  // Handle URL hash on load
+  const currentHash = window.location.hash.replace('#', '');
+  const validTabs = ['theory', 'apparatus', 'experiment'];
+  if (validTabs.includes(currentHash)) {
+    showTab(currentHash);
+  } else {
+    showTab('theory'); // default
+  }
 
-function updateActiveNav() {
-  const sections = document.querySelectorAll('section[id]');
-  const scrollPos = window.scrollY + 200;
-
-  sections.forEach(section => {
-    const top = section.offsetTop;
-    const height = section.offsetHeight;
-    const id = section.getAttribute('id');
-    const link = document.querySelector(`.nav-links a[href="#${id}"]`);
-    if (link) {
-      link.classList.toggle('active', scrollPos >= top && scrollPos < top + height);
+  // Handle browser back/forward buttons
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (validTabs.includes(hash)) {
+      showTab(hash);
     }
   });
 }
@@ -241,6 +261,7 @@ function updateActiveNav() {
 // ===== HERO CANVAS (PARTICLE EFFECTS) =====
 function initHeroCanvas() {
   const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   let particles = [];
 

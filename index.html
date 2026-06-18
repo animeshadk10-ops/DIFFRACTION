@@ -16,76 +16,24 @@
   <div class="bg-glow bg-glow-2"></div>
   <div class="bg-glow bg-glow-3"></div>
 
-  <!-- Navigation -->
-  <nav class="navbar" id="navbar">
-    <div class="container navbar-inner">
-      <a href="#" class="navbar-brand">
-        <div class="brand-icon">🔬</div>
-        <div class="brand-text">
-          <span class="brand-name">V-LAB</span>
-          <span class="brand-sub">Physics Virtual Lab</span>
-        </div>
-      </a>
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#hero" class="active">Home</a></li>
-        <li><a href="#theory">Theory</a></li>
-        <li><a href="#procedure">Procedure</a></li>
-        <li><a href="#simulation">Simulator</a></li>
-        <li><a href="#observation">Observation</a></li>
-        <li><a href="#results">Results</a></li>
-        <li><a href="#quiz">Self Evaluation</a></li>
-      </ul>
-      <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-    </div>
-  </nav>
+  <!-- Header Title -->
+  <header class="lab-header">
+    <h1>Laser Diffraction Experiment</h1>
+    <p>Physics Virtual Laboratory</p>
+  </header>
 
-  <!-- Hero Section -->
-  <section class="hero" id="hero">
-    <canvas id="heroCanvas" class="hero-bg-canvas"></canvas>
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="dot"></span>
-        Virtual Experiment
-      </div>
-      <h1>
-        <span class="gradient-text">Laser Diffraction</span><br>
-        Experiment
-      </h1>
-      <p class="hero-description">
-        Determine the wavelength of a LASER source by forming a diffraction pattern
-        with a plane transmission grating using a spectrometer.
-      </p>
-      <div class="hero-actions">
-        <a href="#simulation" class="btn btn-primary">
-          ▶ Start Experiment
-        </a>
-        <a href="#theory" class="btn btn-secondary">
-          📖 Read Theory
-        </a>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="value">λ</div>
-          <div class="label">Wavelength</div>
-        </div>
-        <div class="hero-stat">
-          <div class="value">d sin θ</div>
-          <div class="label">Grating Equation</div>
-        </div>
-        <div class="hero-stat">
-          <div class="value">nm</div>
-          <div class="label">Precision</div>
-        </div>
-      </div>
+  <!-- Custom Tabbed Navbar -->
+  <div class="custom-navbar-container">
+    <div class="custom-navbar">
+      <button class="custom-nav-item active" data-tab="theory">Theory</button>
+      <button class="custom-nav-item" data-tab="apparatus">Apparatus</button>
+      <button class="custom-nav-item" data-tab="experiment">Experiment</button>
     </div>
-  </section>
+  </div>
 
   <!-- Main Content Area -->
   <main>
+    <div id="page-theory" class="tab-page active-page">
 
     <!-- ==================== THEORY SECTION ==================== -->
     <section class="section" id="theory">
@@ -171,42 +119,7 @@
           </p>
         </div>
 
-        <!-- Apparatus -->
-        <div style="margin-top: 40px;">
-          <h3 style="font-family: var(--font-display); font-size: 14px; color: var(--text-heading); text-align: center; letter-spacing: 2px; margin-bottom: 24px;">
-            🔧 APPARATUS REQUIRED
-          </h3>
-          <div class="apparatus-grid">
-            <div class="apparatus-item">
-              <div class="apparatus-icon">💡</div>
-              <div>
-                <div class="apparatus-name">LASER Diode Module</div>
-                <div class="apparatus-desc">With power supply unit</div>
-              </div>
-            </div>
-            <div class="apparatus-item">
-              <div class="apparatus-icon">🔭</div>
-              <div>
-                <div class="apparatus-name">Spectrometer</div>
-                <div class="apparatus-desc">With vernier scales I & II</div>
-              </div>
-            </div>
-            <div class="apparatus-item">
-              <div class="apparatus-icon">📊</div>
-              <div>
-                <div class="apparatus-name">Diffraction Grating</div>
-                <div class="apparatus-desc">Plane transmission grating</div>
-              </div>
-            </div>
-            <div class="apparatus-item">
-              <div class="apparatus-icon">📡</div>
-              <div>
-                <div class="apparatus-name">LASER Detector</div>
-                <div class="apparatus-desc">Photodetector for intensity</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Apparatus section moved to dedicated tab -->
       </div>
     </section>
 
@@ -295,6 +208,121 @@
         </div>
       </div>
     </section>
+    </div>
+
+    <!-- ==================== APPARATUS PAGE ==================== -->
+    <div id="page-apparatus" class="tab-page">
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-label">Module 02</span>
+            <h2 class="section-title">Apparatus Required</h2>
+            <p class="section-subtitle">The optical and electronic instruments used in this experiment</p>
+          </div>
+          
+          <div class="apparatus-showcase">
+            <!-- Card 1: Spectrometer -->
+            <div class="apparatus-card">
+              <div class="apparatus-card-header">
+                <div class="apparatus-card-icon">🔭</div>
+                <div class="apparatus-card-title">
+                  <h3>Spectrometer</h3>
+                  <span>Primary Instrument</span>
+                </div>
+              </div>
+              <div class="apparatus-card-body">
+                <p>A precision optical instrument used to measure angles of diffraction. It features a circular scale graduated in degrees, a collimator to produce a parallel beam, and a rotatable telescope for observation.</p>
+              </div>
+              <div class="apparatus-specs">
+                <div class="spec-item">
+                  <span class="spec-label">Least Count</span>
+                  <span class="spec-value">1/180° = 0.0056°</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Verniers</span>
+                  <span class="spec-value">Dual (180° Apart)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Diffraction Grating -->
+            <div class="apparatus-card">
+              <div class="apparatus-card-header">
+                <div class="apparatus-card-icon">📊</div>
+                <div class="apparatus-card-title">
+                  <h3>Diffraction Grating</h3>
+                  <span>Optical Element</span>
+                </div>
+              </div>
+              <div class="apparatus-card-body">
+                <p>A plane transmission grating consisting of an optically flat glass plate ruled with a large number of equidistant parallel lines. It diffracts incident light into monochromatic maximum points.</p>
+              </div>
+              <div class="apparatus-specs">
+                <div class="spec-item">
+                  <span class="spec-label">Grating Pitch (d)</span>
+                  <span class="spec-value">2.000 × 10⁻⁴ cm</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Lines / cm</span>
+                  <span class="spec-value">5000 (typical)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: LASER Source -->
+            <div class="apparatus-card">
+              <div class="apparatus-card-header">
+                <div class="apparatus-card-icon">💡</div>
+                <div class="apparatus-card-title">
+                  <h3>Diode LASER</h3>
+                  <span>Coherent Source</span>
+                </div>
+              </div>
+              <div class="apparatus-card-body">
+                <p>A semiconductor diode laser module that acts as the light source. It emits highly monochromatic, coherent, and intense light, allowing sharp diffraction fringes to form without external filters.</p>
+              </div>
+              <div class="apparatus-specs">
+                <div class="spec-item">
+                  <span class="spec-label">Wavelength (λ)</span>
+                  <span class="spec-value">650.0 nm (Red)</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Beam Type</span>
+                  <span class="spec-value">Collimated / Monochromatic</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: LASER Detector -->
+            <div class="apparatus-card">
+              <div class="apparatus-card-header">
+                <div class="apparatus-card-icon">📡</div>
+                <div class="apparatus-card-title">
+                  <h3>Laser Detector</h3>
+                  <span>Sensor Unit</span>
+                </div>
+              </div>
+              <div class="apparatus-card-body">
+                <p>A photodetector mounted on the telescope arm that measures the relative intensity of diffracted beam orders. In this simulation, it captures the diffraction envelope intensity profile.</p>
+              </div>
+              <div class="apparatus-specs">
+                <div class="spec-item">
+                  <span class="spec-label">Sensor Type</span>
+                  <span class="spec-value">Silicon Photodiode</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Output</span>
+                  <span class="spec-value">Relative Intensity %</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== EXPERIMENT PAGE ==================== -->
+    <div id="page-experiment" class="tab-page">
 
     <!-- ==================== SIMULATION SECTION ==================== -->
     <section class="section" id="simulation">
@@ -1005,6 +1033,7 @@
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <!-- Footer -->
