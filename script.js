@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSpectrometerCanvas();
   initTouchControls();
   setupTableListeners();
+  initThemeToggle();
 
   const handleResize = debounce(() => {
     initDiagramCanvas();
@@ -255,6 +256,46 @@ function initNavigation() {
     if (validTabs.includes(hash)) {
       showTab(hash);
     }
+  });
+}
+
+// ===== THEME TOGGLE =====
+function isLightMode() {
+  return document.body.classList.contains('light-mode');
+}
+
+function initThemeToggle() {
+  const btn = document.getElementById('themeToggle');
+  if (!btn) return;
+
+  // Restore saved preference safely
+  let saved = null;
+  try {
+    saved = localStorage.getItem('theme');
+  } catch (e) {
+    console.warn('localStorage is not available:', e);
+  }
+
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    btn.querySelector('.theme-icon').textContent = '☀️';
+  }
+
+  btn.addEventListener('click', () => {
+    document.body.classList.toggle('light-mode');
+    const light = isLightMode();
+    btn.querySelector('.theme-icon').textContent = light ? '☀️' : '🌙';
+    
+    try {
+      localStorage.setItem('theme', light ? 'light' : 'dark');
+    } catch (e) {
+      console.warn('localStorage is not available:', e);
+    }
+
+    // Redraw all canvases with new theme colours
+    try { initDiagramCanvas(); } catch(e) {}
+    try { drawSimulation(); } catch(e) {}
+    try { drawSpectrometer(); } catch(e) {}
   });
 }
 
@@ -352,14 +393,19 @@ function initDiagramCanvas() {
 
   ctx.clearRect(0, 0, W, H);
 
+  const diagLight = isLightMode();
+  // Background fill for diagram
+  ctx.fillStyle = diagLight ? '#f0f2f5' : 'transparent';
+  ctx.fillRect(0, 0, W, H);
+
   // Optical bench
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
   ctx.fillRect(40, H - 60, W - 80, 8);
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = diagLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
   ctx.strokeRect(40, H - 60, W - 80, 8);
 
   // Labels
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)';
   ctx.font = '12px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Optical Bench (~1m)', W / 2, H - 35);
@@ -549,11 +595,12 @@ function drawSimulation() {
   ctx.clearRect(0, 0, W, H);
 
   // Background
-  ctx.fillStyle = '#020208';
+  const light = isLightMode();
+  ctx.fillStyle = light ? '#f0f2f5' : '#020208';
   ctx.fillRect(0, 0, W, H);
 
   // Subtle grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.strokeStyle = light ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.02)';
   ctx.lineWidth = 0.5;
   for (let x = 0; x < W; x += 30) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
@@ -568,7 +615,7 @@ function drawSimulation() {
   const screenX = 40;
 
   // === Optical bench ===
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillStyle = light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
   ctx.fillRect(30, H - 40, W - 60, 6);
 
   // === Laser module ===
@@ -859,8 +906,13 @@ function drawSpectrometer() {
 
   const W = rect.width;
 
+  const lightSpec = isLightMode();
+  // Light-mode color helpers
+  const lc = (a) => lightSpec ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a})`;
+  const lcStroke = (a) => lc(a);
+  const bgFill = lightSpec ? '#f8f9fa' : '#020208';
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#020208';
+  ctx.fillStyle = bgFill;
   ctx.fillRect(0, 0, W, H);
 
   // =========== TOP: SPECTROMETER TOP VIEW ===========
@@ -871,23 +923,29 @@ function drawSpectrometer() {
 
   // Spectrometer body - outer ring with metallic gradient
   const bodyGrad = ctx.createRadialGradient(cx, cy, R - 5, cx, cy, R + 5);
-  bodyGrad.addColorStop(0, 'rgba(60,60,80,0.3)');
-  bodyGrad.addColorStop(0.5, 'rgba(40,40,60,0.5)');
-  bodyGrad.addColorStop(1, 'rgba(20,20,40,0.2)');
+  if (lightSpec) {
+    bodyGrad.addColorStop(0, 'rgba(180,180,200,0.25)');
+    bodyGrad.addColorStop(0.5, 'rgba(160,160,180,0.35)');
+    bodyGrad.addColorStop(1, 'rgba(140,140,160,0.15)');
+  } else {
+    bodyGrad.addColorStop(0, 'rgba(60,60,80,0.3)');
+    bodyGrad.addColorStop(0.5, 'rgba(40,40,60,0.5)');
+    bodyGrad.addColorStop(1, 'rgba(20,20,40,0.2)');
+  }
   ctx.fillStyle = bodyGrad;
   ctx.beginPath();
   ctx.arc(cx, cy, R + 3, 0, Math.PI * 2);
   ctx.fill();
 
   // Outer circle
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = lc(0.2);
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.arc(cx, cy, R, 0, Math.PI * 2);
   ctx.stroke();
 
   // Inner circle (prism table area)
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.strokeStyle = lc(0.12);
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.arc(cx, cy, R * 0.25, 0, Math.PI * 2);
@@ -906,7 +964,7 @@ function drawSpectrometer() {
     else if (isMinor5) { innerR = R - 8; lineWidth = 0.8; alpha = 0.2; }
     else { innerR = R - 4; lineWidth = 0.3; alpha = 0.08; }
 
-    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.strokeStyle = lc(lightSpec ? alpha * 1.8 : alpha);
     ctx.lineWidth = lineWidth;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
@@ -916,7 +974,7 @@ function drawSpectrometer() {
     // Degree labels
     if (isMajor) {
       const labelR = R - 28;
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillStyle = lc(0.6);
       ctx.font = 'bold 9px JetBrains Mono, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -943,7 +1001,7 @@ function drawSpectrometer() {
   ctx.stroke();
 
   // Laser source label
-  ctx.fillStyle = state.laserOn ? '#ff4444' : '#444';
+  ctx.fillStyle = state.laserOn ? '#cc0000' : (lightSpec ? '#666' : '#444');
   ctx.font = 'bold 8px JetBrains Mono';
   ctx.textAlign = 'center';
   ctx.fillText('LASER', cx + R * 1.0, cy - 16);
@@ -984,7 +1042,7 @@ function drawSpectrometer() {
   ctx.stroke();
 
   // Detector label
-  ctx.fillStyle = '#00e5ff';
+  ctx.fillStyle = lightSpec ? '#0077b6' : '#00e5ff';
   ctx.font = 'bold 8px JetBrains Mono';
   ctx.textAlign = 'center';
   ctx.fillText('DETECTOR', armEndX, armEndY - 14);
@@ -1009,9 +1067,9 @@ function drawSpectrometer() {
 
   // Vernier labels
   ctx.font = '8px JetBrains Mono';
-  ctx.fillStyle = '#00e6ff';
+  ctx.fillStyle = lightSpec ? '#0077b6' : '#00e6ff';
   ctx.fillText('V\u2081', v1X + (Math.cos(v1Angle) > 0 ? 12 : -12), v1Y + (Math.sin(v1Angle) > 0 ? 12 : -12));
-  ctx.fillStyle = '#ffab00';
+  ctx.fillStyle = lightSpec ? '#b45309' : '#ffab00';
   ctx.fillText('V\u2082', v2X + (Math.cos(v2Angle) > 0 ? 12 : -12), v2Y + (Math.sin(v2Angle) > 0 ? 12 : -12));
 
   // Angle indicator arc
@@ -1027,7 +1085,7 @@ function drawSpectrometer() {
     ctx.setLineDash([]);
 
     // Angle value
-    ctx.fillStyle = '#ffab00';
+    ctx.fillStyle = lightSpec ? '#b45309' : '#ffab00';
     ctx.font = 'bold 13px JetBrains Mono';
     ctx.textAlign = 'center';
     const midAngle = (startAngle + endAngle) / 2;
@@ -1069,18 +1127,18 @@ function drawSpectrometer() {
     }
 
     // Grating label with d value
-    ctx.fillStyle = '#b388ff';
+    ctx.fillStyle = lightSpec ? '#5b21b6' : '#b388ff';
     ctx.font = 'bold 9px JetBrains Mono';
     ctx.textAlign = 'center';
     ctx.fillText('GRATING', cx, cy + R * 0.22 + 14);
-    ctx.fillStyle = 'rgba(179,136,255,0.7)';
+    ctx.fillStyle = lightSpec ? 'rgba(91,33,182,0.7)' : 'rgba(179,136,255,0.7)';
     ctx.font = '8px JetBrains Mono';
     ctx.fillText(`d = ${state.pitch.toExponential(3)} cm`, cx, cy + R * 0.22 + 26);
     ctx.fillText(`(${state.linesPerCm} lines/cm)`, cx, cy + R * 0.22 + 37);
   }
 
   // Component labels
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillStyle = lc(0.35);
   ctx.font = '9px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Spectrometer \u2014 Top View', cx, specH - 2);
@@ -1091,24 +1149,25 @@ function drawSpectrometer() {
   const lx = 10;
   [
     { color: '#ff1744', label: 'Collimator (Laser)' },
-    { color: '#00e5ff', label: 'Telescope (Detector)' },
-    { color: '#7c4dff', label: 'Grating' },
-    { color: '#00e6ff', label: 'Vernier I (V\u2081)' },
-    { color: '#ffab00', label: 'Vernier II (V\u2082 = V\u2081 + 180\u00B0)' }
+    { color: lightSpec ? '#0077b6' : '#00e5ff', label: 'Telescope (Detector)' },
+    { color: lightSpec ? '#5b21b6' : '#7c4dff', label: 'Grating' },
+    { color: lightSpec ? '#0077b6' : '#00e6ff', label: 'Vernier I (V\u2081)' },
+    { color: lightSpec ? '#b45309' : '#ffab00', label: 'Vernier II (V\u2082 = V\u2081 \u00B1 180\u00B0)' }
   ].forEach((item, i) => {
-    const y = 16 + i * 14;
+    const y = 36 + i * 14;
     ctx.fillStyle = item.color;
     ctx.fillRect(lx, y - 4, 8, 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = lc(0.55);
     ctx.fillText(item.label, lx + 13, y + 3);
   });
 
   // =========== BOTTOM: REALISTIC MSR + VSR SCALE VIEW ===========
-  drawVernierScaleCloseup(ctx, W, specH, H - specH);
+  drawVernierScaleCloseup(ctx, W, specH, H - specH, lightSpec);
 }
 
 // ===== REALISTIC VERNIER SCALE CLOSE-UP =====
-function drawVernierScaleCloseup(ctx, W, startY, availH) {
+function drawVernierScaleCloseup(ctx, W, startY, availH, lightSpec) {
+  const lc = (a) => lightSpec ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a})`;
   const readings = getVernierReadings(state.detectorAngle);
   const padding = 20;
   const scaleW = W - padding * 2;
@@ -1116,22 +1175,22 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   const scaleY = startY + 15;
 
   // Title bar
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillStyle = lc(0.04);
   ctx.fillRect(0, startY, W, availH);
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.strokeStyle = lc(0.1);
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, startY);
   ctx.lineTo(W, startY);
   ctx.stroke();
 
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.7)';
+  ctx.fillStyle = lightSpec ? '#0077b6' : 'rgba(0, 229, 255, 0.7)';
   ctx.font = 'bold 9px JetBrains Mono';
   ctx.textAlign = 'left';
   ctx.fillText('VERNIER I \u2014 SCALE CLOSE-UP', padding, scaleY + 4);
 
   // d value display
-  ctx.fillStyle = 'rgba(179,136,255,0.8)';
+  ctx.fillStyle = lightSpec ? '#5b21b6' : 'rgba(179,136,255,0.8)';
   ctx.font = 'bold 9px JetBrains Mono';
   ctx.textAlign = 'right';
   ctx.fillText(`d = ${state.pitch.toExponential(3)} cm  |  LC = 1/180\u00B0`, W - padding, scaleY + 4);
@@ -1153,11 +1212,11 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   const msrH = 40;
 
   // Main scale background
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillStyle = lc(0.03);
   ctx.beginPath();
   ctx.roundRect(scaleStartX, msrY, scaleW, msrH, 4);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.strokeStyle = lc(0.12);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -1171,7 +1230,7 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
     const isWholeDeg = Math.abs(d - Math.round(d)) < 0.01;
     const tickH = isWholeDeg ? msrH * 0.7 : msrH * 0.5;
 
-    ctx.strokeStyle = isWholeDeg ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = isWholeDeg ? lc(0.6) : lc(0.35);
     ctx.lineWidth = isWholeDeg ? 1.5 : 1;
     ctx.beginPath();
     ctx.moveTo(x, msrY);
@@ -1179,14 +1238,14 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
     ctx.stroke();
 
     // Label
-    ctx.fillStyle = isWholeDeg ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = isWholeDeg ? lc(0.7) : lc(0.4);
     ctx.font = isWholeDeg ? 'bold 10px JetBrains Mono' : '8px JetBrains Mono';
     const label = d >= 0 ? d.toFixed(1) + '\u00B0' : (360 + d).toFixed(1) + '\u00B0';
     ctx.fillText(label, x, msrY + tickH + 3);
   }
 
   // Label
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillStyle = lc(0.3);
   ctx.font = '7px JetBrains Mono';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -1205,11 +1264,11 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   const pixelsPerVSD = vernierPixelSpan / vernierDivisions;
 
   // Vernier scale background
-  ctx.fillStyle = 'rgba(0, 229, 255, 0.03)';
+  ctx.fillStyle = lightSpec ? 'rgba(0,119,182,0.06)' : 'rgba(0, 229, 255, 0.03)';
   ctx.beginPath();
   ctx.roundRect(Math.max(scaleStartX, vernierStartX - 10), vsrY, Math.min(scaleW, vernierPixelSpan + 20), vsrH, 4);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
+  ctx.strokeStyle = lightSpec ? 'rgba(0,119,182,0.2)' : 'rgba(0, 229, 255, 0.15)';
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -1224,7 +1283,7 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
     const isCoinciding = v === vsd;
 
     ctx.strokeStyle = isCoinciding ? '#ff1744' :
-      isMajor ? 'rgba(0, 229, 255, 0.5)' : 'rgba(0, 229, 255, 0.2)';
+      isMajor ? (lightSpec ? 'rgba(0,119,182,0.6)' : 'rgba(0, 229, 255, 0.5)') : (lightSpec ? 'rgba(0,119,182,0.3)' : 'rgba(0, 229, 255, 0.2)');
     ctx.lineWidth = isCoinciding ? 2.5 : isMajor ? 1.2 : 0.5;
     ctx.beginPath();
     ctx.moveTo(x, vsrY + vsrH);
@@ -1255,7 +1314,7 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
 
     // Major labels
     if (isMajor && v <= vernierDivisions) {
-      ctx.fillStyle = 'rgba(0,229,255,0.5)';
+      ctx.fillStyle = lightSpec ? 'rgba(0,119,182,0.6)' : 'rgba(0,229,255,0.5)';
       ctx.font = '7px JetBrains Mono';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
@@ -1264,7 +1323,7 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   }
 
   // Label
-  ctx.fillStyle = 'rgba(0,229,255,0.3)';
+  ctx.fillStyle = lightSpec ? 'rgba(0,119,182,0.4)' : 'rgba(0,229,255,0.3)';
   ctx.font = '7px JetBrains Mono';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -1272,7 +1331,7 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
 
   // ---- READING SUMMARY ----
   const summaryY = vsrY + vsrH + 24;
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillStyle = lc(0.05);
   ctx.beginPath();
   ctx.roundRect(scaleStartX, summaryY, scaleW, 44, 6);
   ctx.fill();
@@ -1282,11 +1341,11 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   ctx.textBaseline = 'top';
 
   // Vernier I reading
-  ctx.fillStyle = '#00e6ff';
+  ctx.fillStyle = lightSpec ? '#0077b6' : '#00e6ff';
   ctx.fillText('V\u2081:', scaleStartX + 10, summaryY + 6);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillStyle = lc(0.7);
   ctx.fillText(`MSR = ${readings.msr1}\u00B0  +  VSD \u00D7 LC = ${vsd} \u00D7 (1/180)\u00B0 = ${readings.vsr1}\u00B0`, scaleStartX + 35, summaryY + 6);
-  ctx.fillStyle = '#00e676';
+  ctx.fillStyle = lightSpec ? '#047857' : '#00e676';
   ctx.font = 'bold 11px JetBrains Mono';
   ctx.textAlign = 'right';
   ctx.fillText(`\u03B8\u2081 = ${readings.total1}\u00B0`, scaleStartX + scaleW - 10, summaryY + 6);
@@ -1294,11 +1353,11 @@ function drawVernierScaleCloseup(ctx, W, startY, availH) {
   // Vernier II reading
   ctx.textAlign = 'left';
   ctx.font = 'bold 10px JetBrains Mono';
-  ctx.fillStyle = '#ffab00';
+  ctx.fillStyle = lightSpec ? '#b45309' : '#ffab00';
   ctx.fillText('V\u2082:', scaleStartX + 10, summaryY + 24);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillStyle = lc(0.7);
   ctx.fillText(`MSR = ${readings.msr2}\u00B0  +  VSD \u00D7 LC = ${readings.vsd2} \u00D7 (1/180)\u00B0 = ${readings.vsr2}\u00B0`, scaleStartX + 35, summaryY + 24);
-  ctx.fillStyle = '#00e676';
+  ctx.fillStyle = lightSpec ? '#047857' : '#00e676';
   ctx.font = 'bold 11px JetBrains Mono';
   ctx.textAlign = 'right';
   ctx.fillText(`\u03B8\u2082 = ${readings.total2}\u00B0`, scaleStartX + scaleW - 10, summaryY + 24);
