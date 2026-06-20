@@ -161,20 +161,26 @@ function debounce(fn, ms) {
 
 // ===== NAVIGATION =====
 document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
-  initHeroCanvas();
-  initDiagramCanvas();
-  initSimulationCanvas();
-  initSpectrometerCanvas();
-  initTouchControls();
-  setupTableListeners();
+  // Initialize theme toggle FIRST so it's always available
   initThemeToggle();
 
+  // Initialize navigation (tab switching)
+  initNavigation();
+
+  // Initialize canvases - wrapped in try/catch since hidden tabs
+  // may cause zero-width canvas issues on first load
+  try { initHeroCanvas(); } catch(e) { console.warn('Hero canvas init:', e); }
+  try { initDiagramCanvas(); } catch(e) { console.warn('Diagram canvas init:', e); }
+  try { initSimulationCanvas(); } catch(e) { console.warn('Sim canvas init:', e); }
+  try { initSpectrometerCanvas(); } catch(e) { console.warn('Spec canvas init:', e); }
+  try { initTouchControls(); } catch(e) { console.warn('Touch controls init:', e); }
+  try { setupTableListeners(); } catch(e) { console.warn('Table listeners init:', e); }
+
   const handleResize = debounce(() => {
-    initDiagramCanvas();
-    resizeSimCanvas();
-    drawSimulation();
-    drawSpectrometer();
+    try { initDiagramCanvas(); } catch(e) {}
+    try { resizeSimCanvas(); } catch(e) {}
+    try { drawSimulation(); } catch(e) {}
+    try { drawSpectrometer(); } catch(e) {}
   }, 200);
 
   window.addEventListener('resize', handleResize);
@@ -220,16 +226,19 @@ function initNavigation() {
     // Reset window scroll to top on tab change
     window.scrollTo(0, 0);
 
-    // Trigger canvas resizing and redraws if we switched to the Experiment page!
+    // Trigger canvas resizing and redraws based on the selected page
     if (tabId === 'experiment') {
       setTimeout(() => {
-        // Re-initialize and resize canvases so they fit correctly after display: none -> block
         initSimulationCanvas();
         initSpectrometerCanvas();
         resizeSimCanvas();
         drawSimulation();
         drawSpectrometer();
-      }, 50); // small delay to allow DOM transition to finish
+      }, 50);
+    } else if (tabId === 'theory') {
+      setTimeout(() => {
+        initDiagramCanvas();
+      }, 50);
     }
   }
 
@@ -383,13 +392,15 @@ function initDiagramCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const H = getCanvasHeight(350, 250, 200);
+  let W = rect.width;
+  if (W === 0) {
+    W = canvas.parentElement.clientWidth || 800;
+  }
 
-  canvas.width = rect.width * dpr;
+  canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-
-  const W = rect.width;
 
   ctx.clearRect(0, 0, W, H);
 
@@ -415,7 +426,7 @@ function initDiagramCanvas() {
   const laserY = H / 2 - 10;
 
   // Laser body
-  ctx.fillStyle = '#1a1a3a';
+  ctx.fillStyle = diagLight ? '#d4d4d8' : '#1a1a3a';
   ctx.strokeStyle = '#ff1744';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -428,18 +439,17 @@ function initDiagramCanvas() {
   ctx.font = 'bold 10px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('LASER', laserX + 40, laserY + 4);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)';
   ctx.font = '10px Inter';
   ctx.fillText('Source', laserX + 40, laserY + 40);
 
-  // Target holder
   const targetX = W * 0.6;
-  ctx.fillStyle = '#1a1a3a';
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillStyle = diagLight ? '#d4d4d8' : '#1a1a3a';
+  ctx.strokeStyle = diagLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
   ctx.lineWidth = 1;
   ctx.fillRect(targetX - 3, laserY - 30, 6, 60);
   ctx.strokeRect(targetX - 3, laserY - 30, 6, 60);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)';
   ctx.font = '10px Inter';
   ctx.fillText('Target Holder', targetX, laserY + 50);
 
@@ -458,14 +468,13 @@ function initDiagramCanvas() {
   ctx.fillText('Diffraction', gratingX, laserY - 50);
   ctx.fillText('Grating', gratingX, laserY - 38);
 
-  // Screen (left side)
   const screenX = 60;
-  ctx.fillStyle = '#1a1a3a';
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = diagLight ? '#d4d4d8' : '#1a1a3a';
+  ctx.strokeStyle = diagLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.3)';
   ctx.lineWidth = 2;
   ctx.fillRect(screenX, laserY - 80, 6, 160);
   ctx.strokeRect(screenX, laserY - 80, 6, 160);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)';
   ctx.font = '10px Inter';
   ctx.fillText('Screen', screenX + 3, laserY + 100);
   ctx.fillText('(Wall)', screenX + 3, laserY + 115);
@@ -528,7 +537,7 @@ function initDiagramCanvas() {
 
     // Order labels
     const orderLabel = i === 0 ? '1st Order' : (i === 1 ? '2nd Order' : (i === 2 ? '3rd Order' : `m=${m}`));
-    ctx.fillStyle = `rgba(255,255,255,${0.4 + alpha})`;
+    ctx.fillStyle = diagLight ? `rgba(0,0,0,${0.4 + alpha})` : `rgba(255,255,255,${0.4 + alpha})`;
     ctx.font = 'bold 9px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(orderLabel, screenX + 14, laserY - dy + 3);
@@ -543,13 +552,13 @@ function initDiagramCanvas() {
   ctx.arc(screenX + 3, laserY, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
   ctx.font = 'bold 9px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Central Spot', screenX + 14, laserY + 3);
 
   // Distance label
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.strokeStyle = diagLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
@@ -557,7 +566,7 @@ function initDiagramCanvas() {
   ctx.lineTo(gratingX, H - 75);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = diagLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)';
   ctx.font = '10px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('D (about 1m)', (screenX + gratingX) / 2, H - 80);
@@ -621,13 +630,13 @@ function drawSimulation() {
   // === Laser module ===
   // Body
   const laserGrad = ctx.createLinearGradient(laserX - 5, centerY - 20, laserX + 70, centerY + 20);
-  laserGrad.addColorStop(0, '#2a1a2a');
-  laserGrad.addColorStop(1, '#1a0a1a');
+  laserGrad.addColorStop(0, light ? '#d4d4d8' : '#2a1a2a');
+  laserGrad.addColorStop(1, light ? '#a1a1aa' : '#1a0a1a');
   ctx.fillStyle = laserGrad;
   ctx.beginPath();
   ctx.roundRect(laserX - 5, centerY - 20, 75, 40, 6);
   ctx.fill();
-  ctx.strokeStyle = state.laserOn ? '#ff1744' : 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = state.laserOn ? '#ff1744' : (light ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)');
   ctx.lineWidth = state.laserOn ? 2 : 1;
   ctx.stroke();
 
@@ -644,13 +653,13 @@ function drawSimulation() {
   }
 
   // Laser label
-  ctx.fillStyle = state.laserOn ? '#ff4444' : 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = state.laserOn ? '#ff4444' : (light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)');
   ctx.font = 'bold 10px "Orbitron", monospace';
   ctx.textAlign = 'center';
   ctx.fillText('LASER', laserX + 32, centerY + 5);
 
   // Aperture
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = light ? '#71717a' : '#111';
   ctx.fillRect(laserX - 10, centerY - 5, 8, 10);
 
   // === Grating ===
@@ -684,13 +693,13 @@ function drawSimulation() {
   }
 
   // === Screen ===
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillStyle = light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
   ctx.fillRect(screenX - 2, centerY - 120, 6, 240);
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = light ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.15)';
   ctx.lineWidth = 1;
   ctx.strokeRect(screenX - 2, centerY - 120, 6, 240);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.3)';
   ctx.font = '10px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Screen', screenX + 1, centerY + 140);
@@ -743,7 +752,7 @@ function drawSimulation() {
       ctx.arc(screenX + 1, centerY, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillStyle = light ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
       ctx.font = 'bold 9px JetBrains Mono';
       ctx.textAlign = 'left';
       ctx.fillText('Central Spot', screenX + 12, centerY + 3);
@@ -784,7 +793,7 @@ function drawSimulation() {
 
         // Labels
         const labelText = i === 0 ? '1st Order' : (i === 1 ? '2nd Order' : (i === 2 ? '3rd Order' : `m=${m}`));
-        ctx.fillStyle = `rgba(255,255,255,${0.3 + intensity * 0.7})`;
+        ctx.fillStyle = light ? `rgba(0,0,0,${0.4 + intensity * 0.6})` : `rgba(255,255,255,${0.3 + intensity * 0.7})`;
         ctx.font = 'bold 9px JetBrains Mono';
         ctx.textAlign = 'left';
         ctx.fillText(labelText, screenX + 12, centerY - dy + 3);
@@ -878,7 +887,7 @@ function drawSimulation() {
     const y = legendY + i * 20;
     ctx.fillStyle = item.color;
     ctx.fillRect(x, y - 4, 12, 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.5)';
     ctx.fillText(item.label, x + 18, y + 4);
   });
 }
